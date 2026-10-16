@@ -1534,7 +1534,7 @@ export default function App() {
     if (password !== password2) { setAuthError("Şifreler aynı değil."); return; }
     if (!terms) { setAuthError("Devam etmek için Kullanım Şartları ve Gizlilik Politikası'nı kabul etmelisin."); return; }
     setAuthBusy(true);
-    const r = await sbFetch("/auth/v1/signup", { method: "POST", body: { email: email.trim(), password, data: { username: username.trim() }, gotrue_meta_security: {} } });
+    const r = await sbFetch("/auth/v1/signup" + REDIR(), { method: "POST", body: { email: email.trim(), password, data: { username: username.trim() }, gotrue_meta_security: {} } });
     setAuthBusy(false);
     if (!r.ok) { setAuthError(authErrorText(r)); return; }
     const sess = toSession(r.data);
