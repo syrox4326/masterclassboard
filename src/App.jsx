@@ -994,6 +994,7 @@ const SESSION_KEY = "mb_session_v1";
 const readSession = () => { try { return JSON.parse(window.localStorage.getItem(SESSION_KEY) || "null"); } catch (e) { return null; } };
 const writeSession = (v) => { try { if (v) window.localStorage.setItem(SESSION_KEY, JSON.stringify(v)); else window.localStorage.removeItem(SESSION_KEY); } catch (e) {} };
 
+const REDIR = () => "?redirect_to=" + encodeURIComponent(window.location.origin + window.location.pathname);
 async function sbFetch(path, { method = "GET", body, token, prefer } = {}) {
   const headers = { apikey: SUPABASE_ANON_KEY, "Content-Type": "application/json", Authorization: `Bearer ${token || SUPABASE_ANON_KEY}` };
   if (prefer) headers.Prefer = prefer;
