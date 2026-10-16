@@ -983,7 +983,7 @@ function PlayerDisc({ color, c2, design = "plain", number, vest, R = DISC_R }) {
 /* ACCOUNTS (Supabase) — fill these in before publishing, see KURULUM.md */
 /* ------------------------------------------------------------------ */
 
-const SUPABASE_URL = "https://omimgzkihvhsoefptqyn.supabase.co/rest/v1/"; // e.g. "https://abcdxyz.supabase.co"
+const SUPABASE_URL = "https://omimgzkihvhsoefptqyn.supabase.co"; // e.g. "https://abcdxyz.supabase.co"
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9taW1nemtpaHZoc29lZnB0cXluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxNzk3NDMsImV4cCI6MjEwNzc1NTc0M30.N6-7Q2zCWwmNowHF35x_TZdhtsaCxs1NY_AzgdMKofs"; // the public "anon" key (safe to put in a web page)
 const SITE_NAME = "Masterclass Board";
 const CONTACT_EMAIL = "denemekerem43436@gmail.com"; // shown on the site: replace with your own address
