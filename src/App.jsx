@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
+import { Muxer, ArrayBufferTarget } from "webm-muxer";
+import { SUPABASE_URL, SUPABASE_ANON_KEY, CONTACT_EMAIL, OWNER_NAME } from "./config.js";
 import {
   Plus, Download, Users, Palette, Tag, Grid3x3, PenTool, Eraser,
   Trash2, X, Check, Undo2, ArrowUpRight, Minus, Square,
@@ -983,11 +985,7 @@ function PlayerDisc({ color, c2, design = "plain", number, vest, R = DISC_R }) {
 /* ACCOUNTS (Supabase) — fill these in before publishing, see KURULUM.md */
 /* ------------------------------------------------------------------ */
 
-const SUPABASE_URL = "https://omimgzkihvhsoefptqyn.supabase.co"; // e.g. "https://abcdxyz.supabase.co"
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9taW1nemtpaHZoc29lZnB0cXluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxNzk3NDMsImV4cCI6MjEwNzc1NTc0M30.N6-7Q2zCWwmNowHF35x_TZdhtsaCxs1NY_AzgdMKofs"; // the public "anon" key (safe to put in a web page)
 const SITE_NAME = "Masterclass Board";
-const CONTACT_EMAIL = "denemekerem43436@gmail.com"; // shown on the site: replace with your own address
-const OWNER_NAME = "Kerem"; // data controller named in the legal texts
 
 const authConfigured = () => !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 const SESSION_KEY = "mb_session_v1";
@@ -1065,6 +1063,7 @@ export default function App() {
   const [activeScene, setActiveScene] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [recLabel, setRecLabel] = useState("");
   const [playSpeed, setPlaySpeed] = useState(1);
   const playSpeedRef = useRef(1);
   const scrollRef = useRef(null);
@@ -1413,32 +1412,20 @@ export default function App() {
     evt.target.value = "";
   };
 
-  const exportPNG = () => {
-    const svg = svgRef.current;
-    const serializer = new XMLSerializer();
-    let source = serializer.serializeToString(svg);
-    if (!/xmlns="http:\/\/www\.w3\.org\/2000\/svg"/.test(source)) source = source.replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"');
-    const svgBlob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
-    const url = URL.createObjectURL(svgBlob);
-    const img = new Image();
-    img.onload = () => {
-      const scale = 3;
-      const vb = svg.viewBox.baseVal;
+  const exportPNG = async () => {
+    try {
+      const vb = svgRef.current.viewBox.baseVal;
+      const s = 3840 / Math.max(vb.width, vb.height); // long side = 3840 px (4K), drawn as sharp vector
       const canvas = document.createElement("canvas");
-      canvas.width = vb.width * scale; canvas.height = vb.height * scale;
+      canvas.width = Math.round(vb.width * s); canvas.height = Math.round(vb.height * s);
       const ctx = canvas.getContext("2d");
-      ctx.fillStyle = boardFill;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      URL.revokeObjectURL(url);
-      canvas.toBlob((blob) => {
-        const link = document.createElement("a");
-        link.download = "taktik-tahtasi.png";
-        link.href = URL.createObjectURL(blob);
-        link.click();
-      });
-    };
-    img.src = url;
+      await snapBoard(canvas, ctx);
+      const blob = await canvasToBlob(canvas, "image/png");
+      const link = document.createElement("a");
+      link.download = "taktik-tahtasi.png";
+      link.href = URL.createObjectURL(blob);
+      link.click();
+    } catch (e) { showToast && showToast("Görsel oluşturulamadı."); }
   };
 
   const updatePlayerField = (id, field, value) => {
@@ -1545,7 +1532,7 @@ export default function App() {
   const doResend = async (email) => {
     setAuthError("");
     setAuthBusy(true);
-    const r = await sbFetch("/auth/v1/resend", { method: "POST", body: { type: "signup", email } });
+    const r = await sbFetch("/auth/v1/resend" + REDIR(), { method: "POST", body: { type: "signup", email } });
     setAuthBusy(false);
     if (!r.ok) { setAuthError(authErrorText(r)); return; }
     setAuthEmail(email); setAuthMode("sent"); showToast("Doğrulama e-postası tekrar gönderildi.");
@@ -1554,7 +1541,7 @@ export default function App() {
     setAuthError("");
     if (!email.trim()) { setAuthError("E-posta adresini yaz."); return; }
     setAuthBusy(true);
-    const r = await sbFetch("/auth/v1/recover", { method: "POST", body: { email: email.trim() } });
+    const r = await sbFetch("/auth/v1/recover" + REDIR(), { method: "POST", body: { email: email.trim() } });
     setAuthBusy(false);
     if (!r.ok && r.status !== 0 && r.status !== 429) { /* do not reveal whether the address exists */ }
     else if (!r.ok) { setAuthError(authErrorText(r)); return; }
@@ -1698,41 +1685,140 @@ export default function App() {
     return rollDegrees(Math.hypot(b.x - a.x, b.y - a.y)) * dir;
   };
 
-  const tweenSegment = (from, to, baseDuration) => new Promise((resolve) => {
-    const start = performance.now();
-    const duration = baseDuration / playSpeedRef.current;
+  const buildPairs = (from, to) => {
     const pair = (fromArr, toArr, type) => fromArr.map((p) => ({ p, target: (toArr || []).find((x) => x.id === p.id), type }));
     const pairs = [...pair(from.players, to.players, "token"), ...pair(from.oppPlayers, to.oppPlayers, "token")];
     pairs.push(...pair(from.equipment || [], to.equipment || [], "equip"));
     if (from.balls && to.balls && from.balls.length === to.balls.length) {
       from.balls.forEach((b, i) => pairs.push({ p: b, target: to.balls[i], type: "ball" }));
     }
+    return pairs;
+  };
+
+  const applyPairs = (pairs, t) => {
+    const ov = {};
+    pairs.forEach(({ p, target, type }) => {
+      if (!target) return;
+      const node = nodeRefs.current[p.id];
+      if (!node) return;
+      const x = tween(p.x, target.x, t), y = tween(p.y, target.y, t);
+      node.setAttribute("transform", placeAttr(x, y, Number(node.dataset.k) || 1));
+      const fnode = nodeRefs.current[p.id + "~f"];
+      if (fnode) fnode.setAttribute("transform", placeAttr(x, y, Number(fnode.dataset.k) || 1));
+      if (type === "ball") {
+        // rolling: spin in proportion to the distance travelled (arc length / radius)
+        const visual = (ballRotationRef.current[p.id] || 0) + rollSigned(p, target) * t;
+        const inner = node.querySelector("[data-ball-spin]");
+        if (inner) inner.setAttribute("transform", `rotate(${visual})`);
+      } else {
+        ov[p.id] = { x, y };
+      }
+    });
+    setLiveOv(ov);
+  };
+
+  const tweenSegment = (from, to, baseDuration) => new Promise((resolve) => {
+    const start = performance.now();
+    const duration = baseDuration / playSpeedRef.current;
+    const pairs = buildPairs(from, to);
     function step(now) {
       if (playCancelRef.current) { resolve(); return; }
       const t = Math.min(1, (now - start) / duration);
-      const ov = {};
-      pairs.forEach(({ p, target, type }) => {
-        if (!target) return;
-        const node = nodeRefs.current[p.id];
-        if (!node) return;
-        const x = tween(p.x, target.x, t), y = tween(p.y, target.y, t);
-        node.setAttribute("transform", placeAttr(x, y, Number(node.dataset.k) || 1));
-        const fnode = nodeRefs.current[p.id + "~f"];
-        if (fnode) fnode.setAttribute("transform", placeAttr(x, y, Number(fnode.dataset.k) || 1));
-        if (type === "ball") {
-          // rolling: spin in proportion to the distance travelled (arc length / radius)
-          const visual = (ballRotationRef.current[p.id] || 0) + rollSigned(p, target) * t;
-          const inner = node.querySelector("[data-ball-spin]");
-          if (inner) inner.setAttribute("transform", `rotate(${visual})`);
-        } else {
-          ov[p.id] = { x, y };
-        }
-      });
-      setLiveOv(ov);
+      applyPairs(pairs, t);
       if (t < 1) requestAnimationFrame(step); else resolve();
     }
     requestAnimationFrame(step);
   });
+
+  /* ---- high-quality capture: the board is drawn as a sharp vector image at the target pixel size ---- */
+  const REC_FPS = 60;
+  const REC_WIDTH = 1920;
+  const nextPaint = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  const canvasToBlob = (c, type, q) => new Promise((res) => c.toBlob(res, type, q));
+  const snapBoard = async (canvas, ctx) => {
+    const clone = svgRef.current.cloneNode(true);
+    clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    clone.setAttribute("width", canvas.width); clone.setAttribute("height", canvas.height);
+    clone.style.width = canvas.width + "px"; clone.style.height = canvas.height + "px";
+    const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(clone)], { type: "image/svg+xml;charset=utf-8" }));
+    const img = new Image();
+    img.src = url;
+    try { await img.decode(); } finally { URL.revokeObjectURL(url); }
+    ctx.fillStyle = boardFill;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  };
+
+  // plays the pre-rendered frames back at a steady 60 fps into the recorder
+  const encodeFrames = async (frames, canvas, ctx) => {
+    const stream = canvas.captureStream(REC_FPS);
+    const mimeType = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"].find((t) => MediaRecorder.isTypeSupported(t));
+    const rec = new MediaRecorder(stream, mimeType ? { mimeType, videoBitsPerSecond: 24000000 } : { videoBitsPerSecond: 24000000 });
+    const chunks = [];
+    rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+    rec.start();
+    const cache = new Map();
+    const want = (i) => { if (i < frames.length && !cache.has(i)) cache.set(i, createImageBitmap(frames[i])); };
+    const t0 = performance.now();
+    let last = -1;
+    while (last < frames.length - 1 && !playCancelRef.current) {
+      const idx = Math.min(frames.length - 1, Math.floor(((performance.now() - t0) * REC_FPS) / 1000));
+      if (idx !== last) {
+        for (let j = idx; j < idx + 12; j++) want(j);
+        const bm = await cache.get(idx);
+        ctx.drawImage(bm, 0, 0);
+        cache.forEach((_, k) => { if (k <= idx) cache.delete(k); });
+        last = idx;
+      }
+      await new Promise((r) => requestAnimationFrame(r));
+    }
+    await new Promise((r) => setTimeout(r, 250));
+    const stopped = new Promise((res) => { rec.onstop = res; });
+    rec.stop();
+    await stopped;
+    return new Blob(chunks, { type: "video/webm" });
+  };
+
+  // Preferred path: WebCodecs encodes every frame with an exact timestamp, so the video is a true 60 fps
+  // no matter how slow the computer is. Fallback: pre-rendered frames replayed into MediaRecorder.
+  const makeSink = async (canvas, ctx) => {
+    if (typeof VideoEncoder !== "undefined" && typeof VideoFrame !== "undefined") {
+      try {
+        const w = canvas.width, h = canvas.height;
+        let pick = null;
+        for (const [codec, mc] of [["vp09.00.50.08", "V_VP9"], ["vp8", "V_VP8"]]) {
+          const r = await VideoEncoder.isConfigSupported({ codec, width: w, height: h, bitrate: 20000000, framerate: REC_FPS });
+          if (r && r.supported) { pick = [codec, mc]; break; }
+        }
+        if (pick) {
+          const muxer = new Muxer({ target: new ArrayBufferTarget(), video: { codec: pick[1], width: w, height: h, frameRate: REC_FPS } });
+          let failed = null;
+          const enc = new VideoEncoder({ output: (chunk, meta) => muxer.addVideoChunk(chunk, meta), error: (e) => { failed = e; } });
+          enc.configure({ codec: pick[0], width: w, height: h, bitrate: 20000000, framerate: REC_FPS });
+          let n = 0;
+          const push = async () => {
+            if (failed) throw failed;
+            while (enc.encodeQueueSize > 6) await new Promise((r) => setTimeout(r, 4));
+            const vf = new VideoFrame(canvas, { timestamp: Math.round((n * 1e6) / REC_FPS), duration: Math.round(1e6 / REC_FPS) });
+            enc.encode(vf, { keyFrame: n % REC_FPS === 0 });
+            vf.close();
+            n++;
+          };
+          return {
+            grab: async () => { await snapBoard(canvas, ctx); await push(); },
+            hold: async (k) => { for (let i = 0; i < k; i++) await push(); },
+            finish: async () => { await enc.flush(); if (failed) throw failed; muxer.finalize(); return new Blob([muxer.target.buffer], { type: "video/webm" }); },
+          };
+        }
+      } catch (e) { /* fall through to the fallback */ }
+    }
+    const frames = [];
+    return {
+      grab: async () => { await snapBoard(canvas, ctx); frames.push(await canvasToBlob(canvas, "image/jpeg", 0.93)); },
+      hold: async (k) => { const f = frames[frames.length - 1]; for (let i = 0; i < k; i++) frames.push(f); },
+      finish: async () => encodeFrames(frames, canvas, ctx),
+    };
+  };
 
   const playSequence = async (record) => {
     if (scenes.length < 2 || isPlaying) return;
@@ -1744,45 +1830,54 @@ export default function App() {
     applySceneState(scenes[0]);
     await new Promise((r) => setTimeout(r, 70));
 
-    let canvas, ctx, recorder, chunks = [], captureTimer;
+    let canvas, ctx, sink = null;
     if (record) {
       try {
+        if (typeof MediaRecorder === "undefined") throw new Error("no recorder");
         const vb = svgRef.current.viewBox.baseVal;
         canvas = document.createElement("canvas");
-        canvas.width = 960; canvas.height = Math.max(1, Math.round((960 * vb.height) / vb.width));
+        canvas.width = REC_WIDTH;
+        const h = Math.round((REC_WIDTH * vb.height) / vb.width);
+        canvas.height = h + (h % 2);
         ctx = canvas.getContext("2d");
-        const stream = canvas.captureStream(12);
-        recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
-        recorder.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
-        recorder.start();
+        sink = await makeSink(canvas, ctx);
+        setRecLabel("Video hazırlanıyor %0");
         setIsRecording(true);
-        const drawFrame = () => {
-          try {
-            const serializer = new XMLSerializer();
-            let src = serializer.serializeToString(svgRef.current);
-            if (!/xmlns="http:\/\/www\.w3\.org\/2000\/svg"/.test(src)) src = src.replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"');
-            const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(src);
-            const img = new Image();
-            img.onload = () => {
-              ctx.fillStyle = boardFill;
-              ctx.fillRect(0, 0, canvas.width, canvas.height);
-              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            };
-            img.src = url;
-          } catch (e) {}
-        };
-        drawFrame();
-        captureTimer = setInterval(drawFrame, 90);
       } catch (e) {
         setScenesMsg("Bu tarayıcıda video kaydı desteklenmiyor, sadece oynatılıyor.");
         record = false;
       }
     }
 
+    const framesPer = (ms) => Math.max(2, Math.round((ms / playSpeedRef.current / 1000) * REC_FPS));
+    const totalFrames = record ? (scenes.length - 1) * framesPer(1100) : 0;
+    let done = 0;
+
+    if (record) {
+      setPlayLayer({ links: scenes[0].links || [], strokes: scenes[0].strokes || [], texts: scenes[0].texts || [] });
+      await nextPaint();
+      await sink.grab();
+      await sink.hold(17); // short still at the start
+    }
+
     for (let i = 0; i < scenes.length - 1; i++) {
       if (playCancelRef.current) break;
       setPlayLayer({ links: scenes[i].links || [], strokes: scenes[i].strokes || [], texts: scenes[i].texts || [] });
-      await tweenSegment(scenes[i], scenes[i + 1], 1100);
+      if (record) {
+        // frame-by-frame, so the video is smooth no matter how slow the computer is
+        const pairs = buildPairs(scenes[i], scenes[i + 1]);
+        const n = framesPer(1100);
+        for (let k = 1; k <= n; k++) {
+          if (playCancelRef.current) break;
+          applyPairs(pairs, k / n);
+          await nextPaint();
+          await sink.grab();
+          done++;
+          if (done % 6 === 0) setRecLabel(`Video hazırlanıyor %${Math.min(99, Math.round((done / totalFrames) * 100))}`);
+        }
+      } else {
+        await tweenSegment(scenes[i], scenes[i + 1], 1100);
+      }
       const fromS = scenes[i], toS = scenes[i + 1];
       if (fromS.balls && toS.balls && fromS.balls.length === toS.balls.length) {
         fromS.balls.forEach((bl, idx) => {
@@ -1791,19 +1886,20 @@ export default function App() {
       }
     }
 
-    if (record && recorder) {
-      clearInterval(captureTimer);
-      await new Promise((r) => setTimeout(r, 120));
-      const stopped = new Promise((res) => { recorder.onstop = res; });
-      recorder.stop();
-      await stopped;
-      const blob = new Blob(chunks, { type: "video/webm" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "taktik-animasyon.webm";
-      link.click();
+    if (record) {
+      if (!playCancelRef.current && sink) {
+        try {
+          await sink.hold(30); // short still at the end
+          setRecLabel("Video tamamlanıyor…");
+          const blob = await sink.finish();
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(blob);
+          link.download = "taktik-animasyon.webm";
+          link.click();
+          setScenesMsg("Video indirildi.");
+        } catch (e) { setScenesMsg("Video oluşturulamadı."); }
+      }
       setIsRecording(false);
-      setScenesMsg("Video indirildi.");
     }
 
     if (!playCancelRef.current) {
@@ -1868,7 +1964,7 @@ export default function App() {
         <main className={`stage ${panel ? "panel-open" : ""}`} style={{ background: grass.a }}>
           {isPlaying && (
             <div className="play-bar">
-              <span>{isRecording ? "● Kaydediliyor" : "Oynatılıyor"}</span>
+              <span>{isRecording ? "● " + recLabel : "Oynatılıyor"}</span>
               <button className="chip" onClick={() => { const v = Math.max(0.25, playSpeedRef.current - 0.25); setPlaySpeed(v); playSpeedRef.current = v; }}>−</button>
               <b>{playSpeed}x</b>
               <button className="chip" onClick={() => { const v = Math.min(3, playSpeedRef.current + 0.25); setPlaySpeed(v); playSpeedRef.current = v; }}>+</button>
