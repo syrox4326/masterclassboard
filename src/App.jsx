@@ -1631,7 +1631,7 @@ export default function App() {
     if (!token) { setSavesMsg("Oturumun sona erdi, tekrar giriş yap."); setSavesBusy(false); return; }
     const r = await sbFetch("/rest/v1/tactics?on_conflict=user_id,name", {
       method: "POST", token, prefer: "resolution=merge-duplicates,return=minimal",
-      body: { user_id: sessionRef.current.user.id, name: saveName.trim(), data: currentState(), updated_at: new Date().toISOString() },
+      body: { user_id: sessionRef.current.user.id, name: saveName.trim(), data: { ...currentState(), scenes }, updated_at: new Date().toISOString() },
     });
     setSavesMsg(r.ok ? "Kaydedildi." : "Kaydedilemedi, tekrar dene.");
     if (r.ok) setSaveName("");
@@ -1645,7 +1645,7 @@ export default function App() {
     const token = await getToken();
     const r = token ? await sbFetch(`/rest/v1/tactics?name=eq.${encodeURIComponent(name)}&select=data`, { token }) : null;
     if (r && r.ok && r.data && r.data[0]) {
-      try { applySceneState(r.data[0].data); setSavesMsg(`"${name}" açıldı.`); setPanel(null); }
+      try { const d = r.data[0].data; applySceneState(d); setScenes(Array.isArray(d.scenes) ? d.scenes : []); setActiveScene(0); setSavesMsg(`"${name}" açıldı.`); setPanel(null); }
       catch (e) { setSavesMsg("Açma sırasında hata oluştu."); }
     } else setSavesMsg("Kayıt bulunamadı.");
     setSavesBusy(false);
