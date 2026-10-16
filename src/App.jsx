@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { Muxer, ArrayBufferTarget } from "webm-muxer";
+import { Muxer as WebmMuxer, ArrayBufferTarget as WebmTarget } from "webm-muxer";
+import { Muxer as Mp4Muxer, ArrayBufferTarget as Mp4Target } from "mp4-muxer";
 import { SUPABASE_URL, SUPABASE_ANON_KEY, CONTACT_EMAIL, OWNER_NAME } from "./config.js";
 import {
   Plus, Download, Users, Palette, Tag, Grid3x3, PenTool, Eraser,
@@ -1786,15 +1787,22 @@ export default function App() {
       try {
         const w = canvas.width, h = canvas.height;
         let pick = null;
-        for (const [codec, mc] of [["vp09.00.50.08", "V_VP9"], ["vp8", "V_VP8"]]) {
-          const r = await VideoEncoder.isConfigSupported({ codec, width: w, height: h, bitrate: 20000000, framerate: REC_FPS });
-          if (r && r.supported) { pick = [codec, mc]; break; }
+        // MP4 / H.264 first (plays everywhere: phones, WhatsApp, editors); WebM only if the browser cannot encode H.264
+        for (const c of [
+          { codec: "avc1.64002A", kind: "mp4", mc: "avc" },
+          { codec: "vp09.00.50.08", kind: "webm", mc: "V_VP9" },
+          { codec: "vp8", kind: "webm", mc: "V_VP8" },
+        ]) {
+          const r = await VideoEncoder.isConfigSupported({ codec: c.codec, width: w, height: h, bitrate: 16000000, framerate: REC_FPS });
+          if (r && r.supported) { pick = c; break; }
         }
         if (pick) {
-          const muxer = new Muxer({ target: new ArrayBufferTarget(), video: { codec: pick[1], width: w, height: h, frameRate: REC_FPS } });
+          const muxer = pick.kind === "mp4"
+            ? new Mp4Muxer({ target: new Mp4Target(), video: { codec: pick.mc, width: w, height: h }, fastStart: "in-memory" })
+            : new WebmMuxer({ target: new WebmTarget(), video: { codec: pick.mc, width: w, height: h, frameRate: REC_FPS } });
           let failed = null;
           const enc = new VideoEncoder({ output: (chunk, meta) => muxer.addVideoChunk(chunk, meta), error: (e) => { failed = e; } });
-          enc.configure({ codec: pick[0], width: w, height: h, bitrate: 20000000, framerate: REC_FPS });
+          enc.configure({ codec: pick.codec, width: w, height: h, bitrate: 16000000, framerate: REC_FPS });
           let n = 0;
           const push = async () => {
             if (failed) throw failed;
@@ -1807,7 +1815,8 @@ export default function App() {
           return {
             grab: async () => { await snapBoard(canvas, ctx); await push(); },
             hold: async (k) => { for (let i = 0; i < k; i++) await push(); },
-            finish: async () => { await enc.flush(); if (failed) throw failed; muxer.finalize(); return new Blob([muxer.target.buffer], { type: "video/webm" }); },
+            ext: pick.kind === "mp4" ? "mp4" : "webm",
+            finish: async () => { await enc.flush(); if (failed) throw failed; muxer.finalize(); return new Blob([muxer.target.buffer], { type: pick.kind === "mp4" ? "video/mp4" : "video/webm" }); },
           };
         }
       } catch (e) { /* fall through to the fallback */ }
@@ -1816,6 +1825,7 @@ export default function App() {
     return {
       grab: async () => { await snapBoard(canvas, ctx); frames.push(await canvasToBlob(canvas, "image/jpeg", 0.93)); },
       hold: async (k) => { const f = frames[frames.length - 1]; for (let i = 0; i < k; i++) frames.push(f); },
+      ext: "webm",
       finish: async () => encodeFrames(frames, canvas, ctx),
     };
   };
@@ -1894,7 +1904,7 @@ export default function App() {
           const blob = await sink.finish();
           const link = document.createElement("a");
           link.href = URL.createObjectURL(blob);
-          link.download = "taktik-animasyon.webm";
+          link.download = "taktik-animasyon." + sink.ext;
           link.click();
           setScenesMsg("Video indirildi.");
         } catch (e) { setScenesMsg("Video oluşturulamadı."); }
