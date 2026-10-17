@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Muxer as WebmMuxer, ArrayBufferTarget as WebmTarget } from "webm-muxer";
 import { Muxer as Mp4Muxer, ArrayBufferTarget as Mp4Target } from "mp4-muxer";
+import Tour from "./Tour.jsx";
 import { SUPABASE_URL, SUPABASE_ANON_KEY, CONTACT_EMAIL, OWNER_NAME } from "./config.js";
 import {
   Plus, Download, Users, Palette, Tag, Grid3x3, PenTool, Eraser,
@@ -8,7 +9,7 @@ import {
   MousePointer2, Image as ImageIcon, ChevronRight, UserCog, Shield,
   Type, CircleDot, Save, LogOut, LogIn, FolderOpen, Layers, Play,
   Upload, Keyboard, ArrowUp, ArrowDown, Video, Sun, Moon, BoxSelect, Link2, Flag, RotateCw, Info
-} from "lucide-react";
+, HelpCircle } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
 /* DATA                                                                */
@@ -1936,21 +1937,22 @@ export default function App() {
         </div>
         <div className="header-actions">
           {user ? (
-            <button className="btn btn-ghost user-chip" onClick={() => setShowAccount(true)} title="Hesabım">
+            <button className="btn btn-ghost user-chip" data-tour="account" onClick={() => setShowAccount(true)} title="Hesabım">
               <span className="user-dot">{user.charAt(0).toUpperCase()}</span> <span className="hide-sm">{user}</span>
             </button>
           ) : (
-            <button className="btn btn-ghost" onClick={() => { setShowAuth(true); setAuthMode("login"); setAuthError(""); }}>
+            <button className="btn btn-ghost" data-tour="account" onClick={() => { setShowAuth(true); setAuthMode("login"); setAuthError(""); }}>
               <LogIn size={16} /> <span className="hide-sm">Giriş</span>
             </button>
           )}
-          <button className="btn btn-ghost" onClick={() => setShowInfo("about")} title="Hakkında ve yasal bilgiler"><Info size={16} /></button>
-          <button className="btn btn-ghost" onClick={() => setUiTheme((t) => (t === "dark" ? "light" : "dark"))} title="Açık / Koyu tema">
+          <button className="btn btn-ghost" data-tour="help" onClick={() => window.dispatchEvent(new Event("mb-tour-start"))} title="Rehber: siteyi adım adım öğren"><HelpCircle size={16} /></button>
+          <button className="btn btn-ghost" data-tour="info" onClick={() => setShowInfo("about")} title="Hakkında ve yasal bilgiler"><Info size={16} /></button>
+          <button className="btn btn-ghost" data-tour="theme" onClick={() => setUiTheme((t) => (t === "dark" ? "light" : "dark"))} title="Açık / Koyu tema">
             {uiTheme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
           </button>
-          <button className="btn btn-ghost" disabled={historyLen === 0} onClick={undoLast} title="Son işlemi geri al (Ctrl+Z)"><Undo2 size={16} /></button>
-          <button className="btn btn-ghost" onClick={() => setShowNew(true)}><Plus size={16} /> <span className="hide-sm">Yeni</span></button>
-          <button className="btn btn-accent" onClick={exportPNG}><Download size={16} /> <span className="hide-sm">Aktar</span></button>
+          <button className="btn btn-ghost" data-tour="undo" disabled={historyLen === 0} onClick={undoLast} title="Son işlemi geri al (Ctrl+Z)"><Undo2 size={16} /></button>
+          <button className="btn btn-ghost" data-tour="new" onClick={() => setShowNew(true)}><Plus size={16} /> <span className="hide-sm">Yeni</span></button>
+          <button className="btn btn-accent" data-tour="export" onClick={exportPNG}><Download size={16} /> <span className="hide-sm">Aktar</span></button>
         </div>
       </header>
 
@@ -2523,6 +2525,7 @@ export default function App() {
           </div>
         </div>
       )}
+      <Tour />
     </div>
   );
 }
