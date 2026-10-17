@@ -570,14 +570,15 @@ function GoalDraw({ FL, FR, BL, color = "#FFFFFF", part = "all" }) {
     <g key="back">
       <polygon points={pts(FL, FR, BRg, BLg)} fill="#000" fillOpacity={0.2} />
       {net("n1", [BLg, BRg, BTR, BTL], 1)}
-      {tube([BLg, BTL, BTR, BRg], 0.2)}
-      {tube([TL, BTL], 0.2)}
-      {tube([TR, BTR], 0.2)}
     </g>
   );
   // side + roof nets sit in front of anything inside the goal (a ball seen through the net), so they join the front layer
   const front = (
     <g key="front">
+      {/* the back posts and rails stand above the ball: a ball that reaches the back post is seen under it */}
+      {tube([BLg, BTL, BTR, BRg], 0.2)}
+      {tube([TL, BTL], 0.2)}
+      {tube([TR, BTR], 0.2)}
       {net("n2", [FL, BLg, BTL, TL], 0.6)}
       {net("n3", [FR, BRg, BTR, TR], 0.6)}
       {net("n4", [TL, TR, BTR, BTL], 0.5)}
@@ -962,11 +963,11 @@ function PlayerDisc({ color, c2, design = "plain", number, vest, R = DISC_R }) {
       {design !== "plain" && <g clipPath="url(#discClip)"><KitPattern design={design} c2={c2} R={R} /></g>}
       {vest && (
         <g clipPath="url(#discClip)">
-          <rect x={-R * 0.74} y={-R} width={R * 1.48} height={2 * R} fill={vest} />
-          {[-0.5, -0.17, 0.17, 0.5].map((k) => <rect key={k} x={R * k - R * 0.04} y={-R} width={R * 0.08} height={2 * R} fill={shade(vest, -0.5)} />)}
+          <rect x={-R * 0.74} y={-R} width={R * 1.48} height={2 * R} fill={vest} opacity="0.5" />
+          {[-0.5, -0.17, 0.17, 0.5].map((k) => <rect key={k} x={R * k - R * 0.04} y={-R} width={R * 0.08} height={2 * R} fill={shade(vest, -0.5)} opacity="0.35" />)}
           <rect x={-R * 0.74} y={-R} width={R * 0.05} height={2 * R} fill={shade(vest, -0.45)} opacity="0.7" />
           <rect x={R * 0.69} y={-R} width={R * 0.05} height={2 * R} fill={shade(vest, -0.45)} opacity="0.7" />
-          <path d={`M ${-R * 0.34} ${-R} Q 0 ${-R * 0.66} ${R * 0.34} ${-R} Z`} fill="#FFFFFF" />
+          <path d={`M ${-R * 0.34} ${-R} Q 0 ${-R * 0.66} ${R * 0.34} ${-R} Z`} fill="#FFFFFF" opacity="0.85" />
         </g>
       )}
       <circle r={R} fill="url(#discShade)" />
@@ -1703,13 +1704,15 @@ export default function App() {
       if (!target) return;
       const node = nodeRefs.current[p.id];
       if (!node) return;
-      const x = tween(p.x, target.x, t), y = tween(p.y, target.y, t);
+      // ball: fast kick, then friction slows it down (constant deceleration); players keep a steady pace
+      const te = type === "ball" ? 1 - (1 - t) * (1 - t) : t;
+      const x = tween(p.x, target.x, te), y = tween(p.y, target.y, te);
       node.setAttribute("transform", placeAttr(x, y, Number(node.dataset.k) || 1));
       const fnode = nodeRefs.current[p.id + "~f"];
       if (fnode) fnode.setAttribute("transform", placeAttr(x, y, Number(fnode.dataset.k) || 1));
       if (type === "ball") {
         // rolling: spin in proportion to the distance travelled (arc length / radius)
-        const visual = (ballRotationRef.current[p.id] || 0) + rollSigned(p, target) * t;
+        const visual = (ballRotationRef.current[p.id] || 0) + rollSigned(p, target) * te;
         const inner = node.querySelector("[data-ball-spin]");
         if (inner) inner.setAttribute("transform", `rotate(${visual})`);
       } else {
@@ -2113,18 +2116,6 @@ export default function App() {
               );
             })}
 
-            {balls.map((b) => (
-              <g key={b.id + tokenKey} ref={(el) => { if (el) nodeRefs.current[b.id] = el; }} transform={placeAttr(b.x, b.y, unit * BALL_BASE * ballScale)} data-k={unit * BALL_BASE * ballScale} data-tid={b.id}
-                onPointerDown={(e) => onTokenDown(e, b.id)} onPointerUp={(e) => onTokenUp(e, b.id)}
-                style={{ cursor: tool === "move" ? "grab" : tool === "eraser" ? "pointer" : "default" }}>
-                <circle r={2.4} cy={-1.5} fill="rgba(255,255,255,0.001)" />
-                <ellipse cx={0.25} cy={0} rx={1.4} ry={0.5} fill="#000" opacity="0.28" />
-                <g transform="translate(0,-1.45)"><g data-ball-spin="1">
-                  <BallGlyph style={b.style} />
-                </g></g>
-              </g>
-            ))}
-
             {logos.map((g) => (
               <g key={g.id + tokenKey} ref={(el) => { if (el) nodeRefs.current[g.id] = el; }} transform={placeAttr(g.x, g.y, 1)} data-k={1} data-tid={g.id}
                 onPointerDown={(e) => onTokenDown(e, g.id)} onPointerUp={(e) => onTokenUp(e, g.id)}
@@ -2162,6 +2153,19 @@ export default function App() {
                 </g>
               );
             })}
+            {/* balls are drawn over the players, so a ball at a player's feet never disappears under the disc */}
+            {balls.map((b) => (
+              <g key={b.id + tokenKey} ref={(el) => { if (el) nodeRefs.current[b.id] = el; }} transform={placeAttr(b.x, b.y, unit * BALL_BASE * ballScale)} data-k={unit * BALL_BASE * ballScale} data-tid={b.id}
+                onPointerDown={(e) => onTokenDown(e, b.id)} onPointerUp={(e) => onTokenUp(e, b.id)}
+                style={{ cursor: tool === "move" ? "grab" : tool === "eraser" ? "pointer" : "default" }}>
+                <circle r={2.4} cy={-1.5} fill="rgba(255,255,255,0.001)" />
+                <ellipse cx={0.25} cy={0} rx={1.4} ry={0.5} fill="#000" opacity="0.28" />
+                <g transform="translate(0,-1.45)"><g data-ball-spin="1">
+                  <BallGlyph style={b.style} />
+                </g></g>
+              </g>
+            ))}
+
             {/* front frames of placed goals: drawn above balls and players so they really sit inside the goal */}
             {equipment.filter((e) => GOAL_SPECS[e.type]).map((e) => {
               const k = unit * (e.sc || 1);
@@ -2972,7 +2976,8 @@ html,body{margin:0; background:#141313;}
 .shortcut-list{display:flex; flex-direction:column; gap:8px; margin:12px 0;}
 .shortcut-row{display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:13px;}
 .shortcut-row kbd{background:var(--surface); border:1px solid var(--panel-border); border-bottom-width:2px; border-radius:7px; padding:3px 9px; font-family:'Barlow Condensed','Oswald',sans-serif; font-weight:700; font-size:13px; color:var(--accent);}
-@media (max-width: 560px){ .hide-sm{display:none;} .brand-title{font-size:18px;} .header{padding:0 10px;} }
+@media (max-width: 560px){ .hide-sm{display:none;} .header{padding:0 8px; gap:6px;} .brand{gap:0; flex-shrink:1;} .brand-text{display:none;} .header-actions{gap:3px; flex:1; min-width:0; justify-content:flex-end;} .header-actions .btn{padding:9px 8px; gap:4px;} }
+@media (max-width: 350px){ .header-actions .btn{padding:9px 6px;} .header-actions{gap:2px;} }
 @media (min-width: 820px){
   .app-body{flex-direction:row;}
   .toolbar{order:0; flex-direction:column; width:var(--rail-w); overflow-x:hidden; overflow-y:auto; border-top:none; border-right:1px solid var(--panel-border); padding:10px 6px; gap:4px; justify-content:flex-start;}
