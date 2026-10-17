@@ -1737,8 +1737,8 @@ export default function App() {
       if (!target) return;
       const node = nodeRefs.current[p.id];
       if (!node) return;
-      // ball: fast kick, then friction slows it down (constant deceleration); players keep a steady pace
-      const te = type === "ball" ? 1 - (1 - t) * (1 - t) : t;
+      // ball keeps the same speed all the way (like a dribble)
+      const te = t;
       const x = tween(p.x, target.x, te), y = tween(p.y, target.y, te);
       node.setAttribute("transform", placeAttr(x, y, Number(node.dataset.k) || 1));
       const fnode = nodeRefs.current[p.id + "~f"];
