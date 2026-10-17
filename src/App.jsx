@@ -985,11 +985,11 @@ function PlayerDisc({ color, c2, design = "plain", number, vest, R = DISC_R }) {
       {design !== "plain" && <g clipPath="url(#discClip)"><KitPattern design={design} c2={c2} R={R} /></g>}
       {vest && (
         <g clipPath="url(#discClip)">
-          <rect x={-R * 0.74} y={-R} width={R * 1.48} height={2 * R} fill={vest} opacity="0.5" />
-          {[-0.5, -0.17, 0.17, 0.5].map((k) => <rect key={k} x={R * k - R * 0.04} y={-R} width={R * 0.08} height={2 * R} fill={shade(vest, -0.5)} opacity="0.35" />)}
-          <rect x={-R * 0.74} y={-R} width={R * 0.05} height={2 * R} fill={shade(vest, -0.45)} opacity="0.7" />
-          <rect x={R * 0.69} y={-R} width={R * 0.05} height={2 * R} fill={shade(vest, -0.45)} opacity="0.7" />
-          <path d={`M ${-R * 0.34} ${-R} Q 0 ${-R * 0.66} ${R * 0.34} ${-R} Z`} fill="#FFFFFF" opacity="0.85" />
+          <rect x={-R * 0.69} y={-R} width={R * 1.38} height={2 * R} fill={vest} opacity="0.94" />
+          {[-0.22, 0.22].map((k) => <rect key={k} x={R * k - R * 0.03} y={-R} width={R * 0.06} height={2 * R} fill={shade(vest, -0.5)} opacity="0.8" />)}
+          {[-0.66, 0.66].map((k) => <rect key={k} x={R * k - R * 0.035} y={-R} width={R * 0.07} height={2 * R} fill={shade(vest, -0.5)} opacity="0.85" />)}
+          <path d={`M ${-R * 0.2} ${-R} L 0 ${-R * 0.78} L ${R * 0.2} ${-R} Z`} fill="#FFFFFF" opacity="0.95" />
+          <path d={`M ${-R * 0.17} ${R} Q 0 ${R * 0.9} ${R * 0.17} ${R} Z`} fill="#FFFFFF" opacity="0.8" />
         </g>
       )}
       <circle r={R} fill="url(#discShade)" />
