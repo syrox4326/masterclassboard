@@ -742,7 +742,14 @@ function BallImage({ src, r = 1.55 }) {
 }
 /* original ball artwork: a classic 32-panel ball built from real sphere geometry,
    coloured with two team palettes (blue/gold and red/black/sky). */
-const BALL_GEO = (() => {
+/* rolling maths: a 3x3 rotation about an axis, applied to the ball so the pattern really tumbles */
+const matVec = (M, v) => [M[0][0] * v[0] + M[0][1] * v[1] + M[0][2] * v[2], M[1][0] * v[0] + M[1][1] * v[1] + M[1][2] * v[2], M[2][0] * v[0] + M[2][1] * v[1] + M[2][2] * v[2]];
+const matMul = (A, B) => A.map((row, i) => [0, 1, 2].map((j) => row[0] * B[0][j] + row[1] * B[1][j] + row[2] * B[2][j]));
+const rotAxis = (ax, ay, th) => {
+  const c = Math.cos(th), s = Math.sin(th), t = 1 - c, x = ax, y = ay, z = 0;
+  return [[t * x * x + c, t * x * y - s * z, t * x * z + s * y], [t * x * y + s * z, t * y * y + c, t * y * z - s * x], [t * x * z - s * y, t * y * z + s * x, t * z * z + c]];
+};
+const BALL_GEO_FOR = (() => {
   const PHI = (1 + Math.sqrt(5)) / 2;
   const n3 = (v) => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
   const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
@@ -764,6 +771,7 @@ const BALL_GEO = (() => {
     faces.push({ type, c, ring: near });
   };
   pentC.forEach((c) => build(c, 5, "p")); hexC.forEach((c) => build(c, 6, "h"));
+  faces.forEach((f, i) => { f.idx = i; });
   // view: a hexagon faces the camera, slightly tilted so it feels natural
   const h0 = n3([1, 1, 1]), e1 = n3(cross(h0, [0, 0, 1])), e2 = cross(h0, e1);
   const ax = 0.28, ay = -0.22;
@@ -773,6 +781,7 @@ const BALL_GEO = (() => {
     let x2 = x * Math.cos(ay) + z2 * Math.sin(ay), z3 = -x * Math.sin(ay) + z2 * Math.cos(ay);
     return [x2, y2, z3];
   };
+  let curView = view;
   const edgePts = (ring, scale, c) => {
     const out = [];
     ring.forEach((a, i) => {
@@ -780,22 +789,39 @@ const BALL_GEO = (() => {
       for (let t = 0; t < 6; t++) {
         const f = t / 6; let p = n3([a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f]);
         if (scale !== 1) p = n3([c[0] + (p[0] - c[0]) * scale, c[1] + (p[1] - c[1]) * scale, c[2] + (p[2] - c[2]) * scale]);
-        out.push(view(p));
+        out.push(curView(p));
       }
     });
     return out;
   };
-  return faces.map((f) => ({ type: f.type, z: view(f.c)[2], outer: edgePts(f.ring, 1, f.c), inner: edgePts(f.ring, 0.74, f.c) })).filter((f) => f.z > -0.3).sort((a, b) => a.z - b.z);
+  // R = optional extra rotation (3x3) that makes the ball roll
+  return (R) => {
+    curView = R ? (v) => matVec(R, view(v)) : view;
+    const res = faces.map((f) => ({ idx: f.idx, type: f.type, z: curView(f.c)[2], outer: edgePts(f.ring, 1, f.c), inner: edgePts(f.ring, 0.74, f.c) })).filter((f) => f.z > -0.3).sort((a, b) => a.z - b.z);
+    curView = view;
+    return res;
+  };
 })();
+const BALL_GEO = BALL_GEO_FOR(null); // eslint-disable-line
 
 const BALL_PALETTES = {
   ucl: { hex: ["#F6F3EA", "#EAF1F8"], pent: ["#2F8FE0", "#2F8FE0"], seam: "#C9A24B", seamW: 0.045, ring: "#1F2B4D", ringW: 0.03, ringOn: "p" },
+  classic: { hex: ["#FBFBF8"], pent: ["#15171D"], seam: "#9CA3AB", seamW: 0.035, ring: "#000", ringW: 0, ringOn: "none" },
   superlig: { hex: ["#FFFFFF", "#FFFFFF"], pent: ["#E5333F", "#17191F"], seam: "#17191F", seamW: 0.03, ring: "#8BC3E8", ringW: 0.04, ringOn: "h" },
 };
-function BallPalette({ id, r = 1.55 }) {
+const ballPath = (pts) => pts.map((p, i) => { const l = Math.hypot(p[0], p[1]), k = p[2] < 0 && l > 0 ? 1 / l : 1; return `${i ? "L" : "M"}${(p[0] * k).toFixed(3)} ${(p[1] * k).toFixed(3)}`; }).join(" ") + "Z";
+function paletteMarkup(id, R) {
   const pal = BALL_PALETTES[id] || BALL_PALETTES.ucl;
-  const path = (pts) => pts.map((p, i) => { const l = Math.hypot(p[0], p[1]), k = p[2] < 0 && l > 0 ? 1 / l : 1; return `${i ? "L" : "M"}${(p[0] * k).toFixed(3)} ${(p[1] * k).toFixed(3)}`; }).join(" ") + "Z";
-  let pi = 0, hi = 0;
+  const geo = R ? BALL_GEO_FOR(R) : BALL_GEO;
+  return geo.map((f) => {
+    const fill = f.type === "p" ? pal.pent[f.idx % pal.pent.length] : pal.hex[f.idx % pal.hex.length];
+    let out = `<path d="${ballPath(f.outer)}" fill="${fill}" stroke="${pal.seam}" stroke-width="${pal.seamW}" stroke-linejoin="round"/>`;
+    if (pal.ringOn === f.type) out += `<path d="${ballPath(f.inner)}" fill="none" stroke="${pal.ring}" stroke-width="${pal.ringW}" stroke-linejoin="round"/>`;
+    return out;
+  }).join("");
+}
+function BallPalette({ id, r = 1.55, rot }) {
+  const pal = BALL_PALETTES[id] || BALL_PALETTES.ucl;
   return (
     <g transform={`scale(${r})`}>
       <defs>
@@ -806,15 +832,7 @@ function BallPalette({ id, r = 1.55 }) {
       <ellipse cx={0.14} cy={0.95} rx={0.95} ry={0.3} fill="#000" opacity="0.2" transform="scale(1,0.8)" />
       <circle r={1} fill={pal.hex[0]} />
       <g clipPath="url(#ballClipU)">
-        {BALL_GEO.map((f, i) => {
-          const fill = f.type === "p" ? pal.pent[pi++ % pal.pent.length] : pal.hex[hi++ % pal.hex.length];
-          return (
-            <g key={i}>
-              <path d={path(f.outer)} fill={fill} stroke={pal.seam} strokeWidth={pal.seamW} strokeLinejoin="round" />
-              {pal.ringOn === f.type && <path d={path(f.inner)} fill="none" stroke={pal.ring} strokeWidth={pal.ringW} strokeLinejoin="round" />}
-            </g>
-          );
-        })}
+        <g data-ball-faces={id} dangerouslySetInnerHTML={{ __html: paletteMarkup(id, rot) }} />
         <circle r={1} fill="url(#ballRimU)" />
         <circle r={1} fill="url(#ballGlossU)" />
       </g>
@@ -822,11 +840,11 @@ function BallPalette({ id, r = 1.55 }) {
     </g>
   );
 }
-function BallUCL({ r = 1.55 }) { return <BallPalette id="ucl" r={r} />; }
-function BallSuperLig({ r = 1.55 }) { return <BallPalette id="superlig" r={r} />; }
+function BallUCL({ r = 1.55, rot }) { return <BallPalette id="ucl" r={r} rot={rot} />; }
+function BallSuperLig({ r = 1.55, rot }) { return <BallPalette id="superlig" r={r} rot={rot} />; }
 /* own design: a plain white ball with navy stars scattered over the sphere at
    different angles (not tied to the panel layout) */
-const STAR_BALL = (() => {
+const STAR_BALL_FOR = (R) => {
   const out = [], n = 13, golden = Math.PI * (3 - Math.sqrt(5)), ax = 0.35, ay = -0.3;
   const rot = (v) => {
     const y2 = v[1] * Math.cos(ax) - v[2] * Math.sin(ax), z2 = v[1] * Math.sin(ax) + v[2] * Math.cos(ax);
@@ -836,7 +854,7 @@ const STAR_BALL = (() => {
   const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
   for (let i = 0; i < n; i++) {
     const y = 1 - (2 * (i + 0.5)) / n, rr = Math.sqrt(1 - y * y), th = i * golden;
-    const p = rot([rr * Math.cos(th), y, rr * Math.sin(th)]);
+    const p0 = rot([rr * Math.cos(th), y, rr * Math.sin(th)]), p = R ? matVec(R, p0) : p0;
     if (p[2] < -0.2) continue;
     const t1 = n3(cross(p, [0.3, 1, 0.2])), t2 = cross(p, t1), spin = i * 1.9;
     const pts = [];
@@ -848,8 +866,12 @@ const STAR_BALL = (() => {
     out.push({ z: p[2], pts });
   }
   return out.sort((a, b) => a.z - b.z);
-})();
-function BallStars({ r = 1.55 }) {
+};
+const STAR_BALL = STAR_BALL_FOR(null);
+function starsMarkup(R) {
+  return (R ? STAR_BALL_FOR(R) : STAR_BALL).map((st) => `<path d="${ballPath(st.pts)}" fill="#1B2A5E" stroke="#1B2A5E" stroke-width="0.02" stroke-linejoin="round"/>`).join("");
+}
+function BallStars({ r = 1.55, rot }) {
   const path = (pts) => pts.map((p, i) => { const l = Math.hypot(p[0], p[1]), k = p[2] < 0 && l > 0 ? 1 / l : 1; return `${i ? "L" : "M"}${(p[0] * k).toFixed(3)} ${(p[1] * k).toFixed(3)}`; }).join(" ") + "Z";
   return (
     <g transform={`scale(${r})`}>
@@ -861,7 +883,7 @@ function BallStars({ r = 1.55 }) {
       <ellipse cx={0.14} cy={0.95} rx={0.95} ry={0.3} fill="#000" opacity="0.2" transform="scale(1,0.8)" />
       <circle r={1} fill="#F7F7F4" />
       <g clipPath="url(#ballClipS)">
-        {STAR_BALL.map((st, i) => <path key={i} d={path(st.pts)} fill="#1B2A5E" stroke="#1B2A5E" strokeWidth={0.02} strokeLinejoin="round" />)}
+        <g data-ball-faces="stars" dangerouslySetInnerHTML={{ __html: starsMarkup(rot) }} />
         <circle r={1} fill="url(#ballRimS)" />
         <circle r={1} fill="url(#ballGlossS)" />
       </g>
@@ -869,13 +891,13 @@ function BallStars({ r = 1.55 }) {
     </g>
   );
 }
-function BallClassic({ r = 1.55 }) { return <BallImage src={CLASSIC_BALL_PNG} r={r} />; }
+function BallClassic({ r = 1.55, rot }) { return <BallPalette id="classic" r={r} rot={rot} />; }
 
-function BallGlyph({ style }) {
-  if (style === "superlig") return <BallSuperLig />;
-  if (style === "classic") return <BallClassic />;
-  if (style === "stars") return <BallStars />;
-  return <BallUCL />;
+function BallGlyph({ style, rot }) {
+  if (style === "superlig") return <BallSuperLig rot={rot} />;
+  if (style === "classic") return <BallClassic rot={rot} />;
+  if (style === "stars") return <BallStars rot={rot} />;
+  return <BallUCL rot={rot} />;
 }
 
 /* ---------------- brand mark ---------------- */
@@ -1688,6 +1710,17 @@ export default function App() {
     return rollDegrees(Math.hypot(b.x - a.x, b.y - a.y)) * dir;
   };
 
+  // rotation of a ball that rolled from a to b, fraction f of the way (on top of what it already had)
+  const ballRollMatrix = (a, b, f) => {
+    const A = P(a.x, a.y), B = P(b.x, b.y);
+    const dx = B.x - A.x, dy = B.y - A.y, len = Math.hypot(dx, dy);
+    const base = ballRotationRef.current[a.id] || null;
+    if (len < 1e-6) return base;
+    const th = (Math.hypot(b.x - a.x, b.y - a.y) / BALL_ROLL_RADIUS) * f;
+    const Rm = rotAxis(-dy / len, dx / len, th);
+    return base ? matMul(Rm, base) : Rm;
+  };
+
   const buildPairs = (from, to) => {
     const pair = (fromArr, toArr, type) => fromArr.map((p) => ({ p, target: (toArr || []).find((x) => x.id === p.id), type }));
     const pairs = [...pair(from.players, to.players, "token"), ...pair(from.oppPlayers, to.oppPlayers, "token")];
@@ -1711,10 +1744,10 @@ export default function App() {
       const fnode = nodeRefs.current[p.id + "~f"];
       if (fnode) fnode.setAttribute("transform", placeAttr(x, y, Number(fnode.dataset.k) || 1));
       if (type === "ball") {
-        // rolling: spin in proportion to the distance travelled (arc length / radius)
-        const visual = (ballRotationRef.current[p.id] || 0) + rollSigned(p, target) * te;
-        const inner = node.querySelector("[data-ball-spin]");
-        if (inner) inner.setAttribute("transform", `rotate(${visual})`);
+        // real rolling: the pattern tumbles forward around an axis across the direction of travel
+        const R = ballRollMatrix(p, target, te);
+        const fg = node.querySelector("[data-ball-faces]");
+        if (fg) fg.innerHTML = fg.dataset.ballFaces === "stars" ? starsMarkup(R) : paletteMarkup(fg.dataset.ballFaces, R);
       } else {
         ov[p.id] = { x, y };
       }
@@ -1895,7 +1928,7 @@ export default function App() {
       const fromS = scenes[i], toS = scenes[i + 1];
       if (fromS.balls && toS.balls && fromS.balls.length === toS.balls.length) {
         fromS.balls.forEach((bl, idx) => {
-          ballRotationRef.current[bl.id] = (ballRotationRef.current[bl.id] || 0) + rollSigned(bl, toS.balls[idx]);
+          ballRotationRef.current[bl.id] = ballRollMatrix(bl, toS.balls[idx], 1);
         });
       }
     }
@@ -2161,7 +2194,7 @@ export default function App() {
                 <circle r={2.4} cy={-1.5} fill="rgba(255,255,255,0.001)" />
                 <ellipse cx={0.25} cy={0} rx={1.4} ry={0.5} fill="#000" opacity="0.28" />
                 <g transform="translate(0,-1.45)"><g data-ball-spin="1">
-                  <BallGlyph style={b.style} />
+                  <BallGlyph style={b.style} rot={ballRotationRef.current[b.id]} />
                 </g></g>
               </g>
             ))}
