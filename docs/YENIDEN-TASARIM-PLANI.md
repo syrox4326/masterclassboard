@@ -183,8 +183,14 @@ Bölüm 1'deki envanterin her maddesi bir Playwright testine bağlanır. Yeni s�
 - **Performans:** Lighthouse mobil ≥ 90; ilk JS ≤ 180 KB gzip (video ve hesap modülleri tembel yüklenir); 22 oyuncu + 50 çizimde sürükleme 60 fps.
 - **Metin:** Cümle düzeni, BÜYÜK HARF etiket yok, butonlar ne yaptığını söyler ("Kaydet" → "Kaydedildi").
 
-## 9. Senden beklenen kararlar
-1. "Saha önde" yönü ve The Tactics App'ten alınacaklar listesi uygun mu? Eklemek ya da çıkarmak istediğin bir şey var mı?
-2. Ayrı bir tanıtım sayfası (`/`) olsun mu, yoksa site doğrudan tahtayla mı açılsın?
-3. Koç Kaan maskotu kalsın mı (yeni stile uyarlanarak), yoksa sade bir ipucu turuna mı geçelim?
-4. Paylaşım bağlantısı (Supabase'de küçük bir tablo değişikliği gerektirir) bu sürüme girsin mi?
+## 9. Kararlar (16 Kasım 2026)
+1. "Saha önde" yönü ve The Tactics App'ten alınacaklar: **onaylandı**.
+2. Tanıtım sayfası: **olacak** (aşama 10, taste-skill ile).
+3. Maskot: **kalıyor**, tasarımı yenilendi ve adı **Yılmaz Hoca** oldu.
+4. Paylaşım bağlantısı: henüz karar verilmedi.
+
+## 10. Aşama 1 ilerleme
+- Yeni kabuk mevcut tuvalin üstünde çalışıyor: üstte sekme çubuğu, solda yüzen araç hapı (gruplu açılır menüler), sağda sekmeli panel (Takım, Forma, Saha, Çizim, Nesneler, Sahneler, Kayıtlar), altta sahne şeridi ve Dışa aktar.
+- Diziliş seçimi küçük saha resimleriyle; pullar daha büyük ve parlak, isimler beyaz etiket içinde; tahta örnek bir 4-3-3'e karşı 4-4-2 ile açılıyor.
+- Tema ziyaretçinin sistem ayarını izliyor ve seçim hatırlanıyor. Arayüz yazısı Barlow, marka ve numaralar Barlow Condensed.
+- Ölçümler: aislopmeter 17 → 9/100 (kalanlar: JavaScript'siz boş sayfa, tek ikon seti, başlık hiyerarşisi; tanıtım sayfası aşamasında çözülecek). impeccable detect: 0 bulgu.

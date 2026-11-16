@@ -9,17 +9,17 @@ import {
   MousePointer2, Image as ImageIcon, ChevronRight, UserCog, Shield,
   Type, CircleDot, Save, LogOut, LogIn, FolderOpen, Layers, Play,
   Upload, Keyboard, ArrowUp, ArrowDown, Video, Sun, Moon, BoxSelect, Link2, Flag, RotateCw, Info
-, HelpCircle } from "lucide-react";
+, HelpCircle, Shirt } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
 /* DATA                                                                */
 /* ------------------------------------------------------------------ */
 
 const HOME_SQUAD = [
-  { number: 1, name: "D. Ward" }, { number: 22, name: "P. Mendes" }, { number: 24, name: "I. Diallo" },
-  { number: 15, name: "B. Hughes" }, { number: 21, name: "A. Ruiz" }, { number: 7, name: "L. Ferreira" },
-  { number: 14, name: "A. Nowak" }, { number: 17, name: "Y. Demir" }, { number: 10, name: "D. Alvarez" },
-  { number: 11, name: "N. Berg" }, { number: 20, name: "L. Petrovic" },
+  { number: 1, name: "Uğur" }, { number: 2, name: "Eren" }, { number: 4, name: "Kaan" },
+  { number: 5, name: "Mert" }, { number: 3, name: "Ferdi" }, { number: 6, name: "Salih" },
+  { number: 8, name: "Arda" }, { number: 10, name: "Hakan" }, { number: 7, name: "Yunus" },
+  { number: 9, name: "Barış" }, { number: 11, name: "Kenan" },
 ];
 
 const AWAY_SQUAD = [
@@ -116,7 +116,7 @@ const DRAW_COLORS = ["#FFFFFF", "#F5E94A", "#EF4444", "#38BDF8", "#111827", "#25
 const ARROW_COLORS = Array.from(new Set([...DRAW_COLORS, "#EAFF3D", "#F4F4F7", "#38BDF8"]));
 const TEXT_SIZES = [2, 3, 4.2, 5.6];
 const GK_COLOR = "#8D8E96";
-const PLAYER_BASE = 0.72; // disc ≈ 2.7 m across on a 68 m pitch (a real player is far smaller, but this stays readable)
+const PLAYER_BASE = 0.9; // disc ≈ 2.7 m across on a 68 m pitch (a real player is far smaller, but this stays readable)
 const BALL_BASE = 0.5; // ball ≈ 1.5 m across (real is 0.22 m, kept visible)
 const EQUIP_BASE = { cone_tall: 0.4, pole: 0.4, flag: 0.45, hurdle: 0.4, ladder: 0.6, ring: 0.4, wall: 0.6 };
 const equipBase = (type) => (CONE_COLORS[type] ? 0.5 : DUMMY_COLORS[type] ? 0.66 : GOAL_SPECS[type] ? 1 : EQUIP_BASE[type] || 0.5);
@@ -993,9 +993,11 @@ function PlayerDisc({ color, c2, design = "plain", number, vest, R = DISC_R }) {
         </g>
       )}
       <circle r={R} fill="url(#discShade)" />
-      <circle r={R} fill="none" stroke={rim} strokeWidth={0.2} />
+      <circle r={R * 0.84} fill="none" stroke="#FFFFFF" strokeOpacity="0.22" strokeWidth={R * 0.07} />
+      <ellipse cx={-R * 0.18} cy={-R * 0.5} rx={R * 0.62} ry={R * 0.34} fill="url(#discGloss)" />
+      <circle r={R} fill="none" stroke={rim} strokeWidth={0.22} />
       {txt && (
-        <text y={fs * 0.355} textAnchor="middle" fontFamily="Montserrat, 'Barlow Condensed', Inter, sans-serif" fontWeight="800" fontSize={fs}
+        <text y={fs * 0.355} textAnchor="middle" fontFamily="'Barlow Condensed', Barlow, sans-serif" fontWeight="700" fontSize={fs * 1.12}
           fill={numFill} style={{ paintOrder: "stroke", stroke: numStroke, strokeWidth: R * 0.2, strokeLinejoin: "round" }}>{txt}</text>
       )}
     </g>
@@ -1067,7 +1069,12 @@ export default function App() {
   const [ballScale, setBallScale] = useState(1);
   const [homeKit, setHomeKit] = useState({ design: "plain", c2: "#FFFFFF" });
   const [awayKit, setAwayKit] = useState({ design: "plain", c2: "#FFFFFF" });
-  const [uiTheme, setUiTheme] = useState("dark"); // app chrome theme, separate from the pitch's own chalk/turf look
+  // app chrome theme (separate from the pitch's own look): the viewer's last choice, otherwise their system setting
+  const [uiTheme, setUiTheme] = useState(() => {
+    try { const v = window.localStorage.getItem("mb_theme"); if (v === "dark" || v === "light") return v; } catch (e) {}
+    return typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  });
+  useEffect(() => { try { window.localStorage.setItem("mb_theme", uiTheme); } catch (e) {} }, [uiTheme]);
   const [tool, setTool] = useState("move");
   const [drawColor, setDrawColor] = useState("#FFFFFF");
   const [strokes, setStrokes] = useState([]);
@@ -1096,6 +1103,10 @@ export default function App() {
   const [showShortcuts, setShowShortcuts] = useState(false);
 
   const [panel, setPanel] = useState(null);
+  const [flyout, setFlyout] = useState(null);
+  const [groupLast, setGroupLast] = useState({ draw: "arrow", shape: "rect" });
+  const showP = (id) => panel === id || (DOCK_GROUPS[panel] || []).includes(id);
+  const grpHead = (title) => (DOCK_GROUPS[panel] ? <h3 className="dock-h">{title}</h3> : null);
   const [colorTab, setColorTab] = useState("home");
   const [showNew, setShowNew] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -1140,7 +1151,7 @@ export default function App() {
   useEffect(() => {
     const link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = "https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,600;0,700;1,600;1,700&family=Inter:wght@400;500;600;700&family=Montserrat:wght@700;800&display=swap";
+    link.href = "https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,600;0,700;1,600;1,700&family=Barlow:wght@400;500;600;700&display=swap";
     document.head.appendChild(link);
     return () => document.head.removeChild(link);
   }, []);
@@ -1165,6 +1176,18 @@ export default function App() {
 
 
   useEffect(() => { if (tool !== "link") setLinkFrom(null); }, [tool]);
+
+  // first view: a real lineup instead of an empty pitch, and the team panel open on wide screens
+  useEffect(() => {
+    const place = (team, pts) => team.map((pl, i) => ({ ...pl, x: pts[i][0], y: pts[i][1] }));
+    const HOME_AT = [[34, 5], [60, 26], [44, 19], [24, 19], [8, 26], [34, 35], [48, 45], [20, 45], [58, 63], [34, 66], [10, 63]];
+    const AWAY_AT = [[34, 100], [8, 88], [24, 90], [44, 90], [60, 88], [9, 76], [26, 78], [42, 78], [59, 76], [25, 55], [43, 55]];
+    setPlayers((prev) => (prev.length ? prev : place(buildFormation("4-3-3", HOME_SQUAD, "h", true), HOME_AT)));
+    setOppPlayers((prev) => (prev.length ? prev : place(buildFormation("4-4-2", AWAY_SQUAD, "a", false), AWAY_AT)));
+    setShowOpponent(true);
+    setLabelMode((m) => (m === "none" ? "names" : m));
+    if (window.innerWidth >= 1100) setPanel("takim");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // keyboard shortcuts (desktop convenience) — ignored while typing in a field or a modal is open
   useEffect(() => {
@@ -1414,9 +1437,9 @@ export default function App() {
   };
 
   const clearStrokes = () => { setStrokes([]); setTexts([]); setBalls([]); setLogos([]); setLinks([]); setEquipment([]); };
-  const selectEquip = (id) => { setEquipPick(id); setTool("equip"); setPanel(null); };
+  const selectEquip = (id) => { setEquipPick(id); setTool("equip"); if (window.innerWidth < 820) setPanel(null); };
 
-  const selectBallStyle = (id) => { setBallStyle(id); setTool("ball"); setPanel(null); };
+  const selectBallStyle = (id) => { setBallStyle(id); setTool("ball"); if (window.innerWidth < 820) setPanel(null); };
 
   const applyPreset = (preset) => {
     const stamped = preset.strokes.map((s, i) => ({ ...s, id: `s${Date.now()}_${i}`, points: s.points.map((p) => ({ ...p })) }));
@@ -1966,59 +1989,39 @@ export default function App() {
     <div className="app-root" data-theme={uiTheme}>
       <style>{CSS}</style>
 
-      <header className="header">
+      <header className="topbar">
         <div className="brand">
           <BrandMark />
-          <div className="brand-text"><span className="brand-title">MASTERCLASS BOARD</span><span className="brand-sub">Taktik Tahtası</span></div>
+          <span className="brand-title">MASTERCLASS BOARD</span>
         </div>
-        <div className="header-actions">
+        <div className="doc-tabs">
+          <div className="doc-tab is-on" title="Açık taktik"><span>{saveName.trim() || "Adsız taktik"}</span></div>
+          <button className="doc-new" data-tour="new" onClick={() => setShowNew(true)} title="Yeni tahta" aria-label="Yeni tahta"><Plus size={16} /></button>
+        </div>
+        <div className="top-actions">
+          <button className="ib" data-tour="undo" disabled={historyLen === 0} onClick={undoLast} title="Geri al (Ctrl+Z)" aria-label="Geri al"><Undo2 size={17} /></button>
+          <span className="top-sep" />
+          <button className="ib hide-sm" onClick={() => setShowShortcuts((v) => !v)} title="Klavye kısayolları" aria-label="Klavye kısayolları"><Keyboard size={17} /></button>
+          <button className="ib" data-tour="help" onClick={() => window.dispatchEvent(new Event("mb-tour-start"))} title="Rehber: Yılmaz Hoca ile turu başlat" aria-label="Rehber"><HelpCircle size={17} /></button>
+          <button className="ib hide-sm" data-tour="info" onClick={() => setShowInfo("about")} title="Hakkında ve yasal bilgiler" aria-label="Hakkında"><Info size={17} /></button>
+          <button className="ib" data-tour="theme" onClick={() => setUiTheme((t) => (t === "dark" ? "light" : "dark"))} title="Açık / koyu tema" aria-label="Tema değiştir">
+            {uiTheme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
+          </button>
           {user ? (
-            <button className="btn btn-ghost user-chip" data-tour="account" onClick={() => setShowAccount(true)} title="Hesabım">
-              <span className="user-dot">{user.charAt(0).toUpperCase()}</span> <span className="hide-sm">{user}</span>
+            <button className="acct" data-tour="account" onClick={() => setShowAccount(true)} title="Hesabım">
+              <span className="user-dot">{user.charAt(0).toUpperCase()}</span><span className="hide-sm">{user}</span>
             </button>
           ) : (
-            <button className="btn btn-ghost" data-tour="account" onClick={() => { setShowAuth(true); setAuthMode("login"); setAuthError(""); }}>
-              <LogIn size={16} /> <span className="hide-sm">Giriş</span>
+            <button className="acct" data-tour="account" onClick={() => { setShowAuth(true); setAuthMode("login"); setAuthError(""); }}>
+              <LogIn size={16} /><span className="hide-sm">Giriş yap</span>
             </button>
           )}
-          <button className="btn btn-ghost" data-tour="help" onClick={() => window.dispatchEvent(new Event("mb-tour-start"))} title="Rehber: siteyi adım adım öğren"><HelpCircle size={16} /></button>
-          <button className="btn btn-ghost" data-tour="info" onClick={() => setShowInfo("about")} title="Hakkında ve yasal bilgiler"><Info size={16} /></button>
-          <button className="btn btn-ghost" data-tour="theme" onClick={() => setUiTheme((t) => (t === "dark" ? "light" : "dark"))} title="Açık / Koyu tema">
-            {uiTheme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-          </button>
-          <button className="btn btn-ghost" data-tour="undo" disabled={historyLen === 0} onClick={undoLast} title="Son işlemi geri al (Ctrl+Z)"><Undo2 size={16} /></button>
-          <button className="btn btn-ghost" data-tour="new" onClick={() => setShowNew(true)}><Plus size={16} /> <span className="hide-sm">Yeni</span></button>
-          <button className="btn btn-accent" data-tour="export" onClick={exportPNG}><Download size={16} /> <span className="hide-sm">Aktar</span></button>
         </div>
       </header>
 
       <div className="app-body">
-        {/* ---------------- toolbar (left rail on desktop, bottom bar on phones) ---------------- */}
-        <nav className="toolbar">
-          <ToolbarButton icon={Users} label="Diziliş" active={panel === "formation"} onClick={() => setPanel(panel === "formation" ? null : "formation")} />
-          <ToolbarButton icon={UserCog} label="Kadro" active={panel === "roster"} onClick={() => setPanel(panel === "roster" ? null : "roster")} />
-          <ToolbarButton icon={Palette} label="Forma" active={panel === "color"} onClick={() => setPanel(panel === "color" ? null : "color")} />
-          <ToolbarButton icon={Tag} label="Etiket" active={panel === "labels"} onClick={() => setPanel(panel === "labels" ? null : "labels")} />
-          <ToolbarButton icon={Grid3x3} label="Saha" active={panel === "zones"} onClick={() => setPanel(panel === "zones" ? null : "zones")} />
-          <ToolbarButton icon={PenTool} label="Çizim" active={panel === "draw"} onClick={() => setPanel(panel === "draw" ? null : "draw")} />
-          <ToolbarButton icon={Flag} label="Malzeme" active={panel === "equip"} onClick={() => setPanel(panel === "equip" ? null : "equip")} />
-          <ToolbarButton icon={CircleDot} label="Top" active={panel === "balls"} onClick={() => setPanel(panel === "balls" ? null : "balls")} />
-          <ToolbarButton icon={Upload} label="Logo" active={panel === "logo"} onClick={() => setPanel(panel === "logo" ? null : "logo")} />
-          <ToolbarButton icon={Layers} label="Sahneler" active={panel === "scenes"} onClick={() => setPanel(panel === "scenes" ? null : "scenes")} />
-          <ToolbarButton icon={Save} label="Kayıtlar" active={panel === "saves"} onClick={() => setPanel(panel === "saves" ? null : "saves")} />
-          <ToolbarButton icon={Keyboard} label="Kısayollar" active={showShortcuts} onClick={() => setShowShortcuts((v) => !v)} />
-        </nav>
 
         <main className={`stage ${panel ? "panel-open" : ""}`} style={{ background: grass.a }}>
-          {isPlaying && (
-            <div className="play-bar">
-              <span>{isRecording ? "● " + recLabel : "Oynatılıyor"}</span>
-              <button className="chip" onClick={() => { const v = Math.max(0.25, playSpeedRef.current - 0.25); setPlaySpeed(v); playSpeedRef.current = v; }}>−</button>
-              <b>{playSpeed}x</b>
-              <button className="chip" onClick={() => { const v = Math.min(3, playSpeedRef.current + 0.25); setPlaySpeed(v); playSpeedRef.current = v; }}>+</button>
-              <button className="chip chip-active" onClick={stopPlayback}><X size={13} /> Durdur</button>
-            </div>
-          )}
           <div className="pitch-scroll" ref={scrollRef}>
           <svg ref={svgRef} viewBox={viewBox} className="pitch-svg"  preserveAspectRatio="xMidYMid meet" onPointerMove={onSvgMove} onPointerDown={onSvgDown} onPointerDownCapture={onSvgDownCapture} onPointerUp={onSvgUp} onPointerLeave={onSvgUp} onContextMenu={onSvgContext}>
             <defs>
@@ -2033,6 +2036,10 @@ export default function App() {
                 <stop offset="100%" stopColor="#000" stopOpacity="0.26" />
               </linearGradient>
               <clipPath id="discClip"><circle r={DISC_R} /></clipPath>
+              <radialGradient id="discGloss" cx="0.5" cy="0.35" r="0.6">
+                <stop offset="0%" stopColor="#fff" stopOpacity="0.55" />
+                <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+              </radialGradient>
               <pattern id="netPatY" width="0.7" height="0.7" patternUnits="userSpaceOnUse">
                 <rect width="0.7" height="0.7" fill="#F6D60A" fillOpacity="0.14" />
                 <path d="M0 0L0.7 0.7M0.7 0L0 0.7" stroke="#F6D60A" strokeWidth="0.1" strokeOpacity="0.9" />
@@ -2177,12 +2184,17 @@ export default function App() {
                   style={{ cursor: tool === "move" ? "grab" : tool === "link" ? "pointer" : "default" }}>
                   <PlayerDisc color={gk ? GK_COLOR : p.color} c2={kit.c2} design={gk ? "plain" : kit.design} number={p.number} vest={p.vest} />
                   {linkFrom === p.id && <circle r={DISC_R + 0.9} fill="none" stroke="#FFFFFF" strokeWidth={0.34} strokeDasharray="0.9 0.7" />}
-                  {labelMode !== "none" && (labelMode === "names" ? p.name : p.role) && (
-                    <text y={DISC_R + 1.3 / PLAYER_BASE} textAnchor="middle" fontFamily="Inter, sans-serif" fontWeight="600" fontSize={1.4 / PLAYER_BASE}
-                      fill="#FFFFFF" style={{ paintOrder: "stroke", stroke: "rgba(8,12,20,0.7)", strokeWidth: 0.38 / PLAYER_BASE, strokeLinejoin: "round", pointerEvents: "none" }}>
-                      {labelMode === "names" ? p.name : p.role}
-                    </text>
-                  )}
+                  {labelMode !== "none" && (labelMode === "names" ? p.name : p.role) && (() => {
+                    const label = String(labelMode === "names" ? p.name : p.role);
+                    const fs = 1.25 / PLAYER_BASE;
+                    const w = label.length * fs * 0.6 + fs * 1.2, h = fs * 1.55, y0 = DISC_R + 0.35;
+                    return (
+                      <g style={{ pointerEvents: "none" }}>
+                        <rect x={-w / 2} y={y0} width={w} height={h} rx={h / 2} fill="#FFFFFF" fillOpacity="0.95" stroke="rgba(8,12,20,0.25)" strokeWidth={0.08} />
+                        <text y={y0 + h * 0.7} textAnchor="middle" fontFamily="Barlow, sans-serif" fontWeight="650" fontSize={fs} fill="#15181A">{label}</text>
+                      </g>
+                    );
+                  })()}
                 </g>
               );
             })}
@@ -2213,38 +2225,95 @@ export default function App() {
           </svg>
           </div>
 
-          {/* floating quick tools */}
-          <div className="quickbar">
-            {DRAW_TOOLS.map((t) => (
-              <button key={t.id} className={`qb ${tool === t.id ? "qb-active" : ""}`} title={t.label} onClick={() => setTool(t.id)}>
-                <t.icon size={17} /><span className="qb-label">{t.label}</span>
-              </button>
-            ))}
-            <button className={`qb ${tool === "equip" ? "qb-active" : ""}`} title="Malzeme ekle" onClick={() => setPanel(panel === "equip" ? null : "equip")}><Flag size={17} /><span className="qb-label">Malzeme</span></button>
-            <button className={`qb ${tool === "ball" ? "qb-active" : ""}`} title="Top ekle" onClick={() => setPanel(panel === "balls" ? null : "balls")}><CircleDot size={17} /><span className="qb-label">Top</span></button>
-            <button className="qb qb-color" title="Çizim rengi" onClick={() => setPanel(panel === "draw" ? null : "draw")}><span style={{ background: drawColor }} /></button>
+          {/* floating tool pill (left on desktop, bottom on phones) */}
+          <div className="toolpill" role="toolbar" aria-label="Araçlar" data-tour="tools">
+            {TOOL_LAYOUT.map((item) => {
+              if (!item.group) {
+                const t = DRAW_TOOLS.find((d) => d.id === item.id);
+                return (
+                  <button key={t.id} className={`tp ${tool === t.id ? "is-on" : ""}`} title={t.label} aria-label={t.label} aria-pressed={tool === t.id} onClick={() => { setTool(t.id); setFlyout(null); }}>
+                    <t.icon size={19} /><span className="tp-label">{t.label}</span>
+                  </button>
+                );
+              }
+              const active = item.tools.includes(tool);
+              const cur = DRAW_TOOLS.find((d) => d.id === (active ? tool : groupLast[item.group]));
+              return (
+                <div className="tp-group" key={item.group}>
+                  <button className={`tp ${active ? "is-on" : ""}`} title={`${item.label}: ${cur.label}`} aria-label={item.label} aria-haspopup="true" aria-expanded={flyout === item.group}
+                    onClick={() => { if (active) setFlyout(flyout === item.group ? null : item.group); else { setTool(cur.id); setFlyout(item.group); } }}>
+                    <cur.icon size={19} /><span className="tp-label">{cur.label}</span><span className="tp-more" aria-hidden="true" />
+                  </button>
+                  {flyout === item.group && (
+                    <div className="tp-fly" role="menu">
+                      {item.tools.map((id) => {
+                        const t = DRAW_TOOLS.find((d) => d.id === id);
+                        return (
+                          <button key={id} role="menuitemradio" aria-checked={tool === id} className={`tp-fly-item ${tool === id ? "is-on" : ""}`}
+                            onClick={() => { setTool(id); setGroupLast((g) => ({ ...g, [item.group]: id })); setFlyout(null); }}>
+                            <t.icon size={17} /><span>{t.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            <span className="tp-sep" />
+            <button className={`tp ${tool === "equip" || panel === "nesne" ? "is-on" : ""}`} title="Malzeme ekle" aria-label="Malzeme ekle" onClick={() => { setFlyout(null); setPanel(panel === "nesne" ? null : "nesne"); }}><Flag size={19} /><span className="tp-label">Malzeme</span></button>
+            <button className={`tp ${tool === "ball" ? "is-on" : ""}`} title="Top ekle" aria-label="Top ekle" aria-pressed={tool === "ball"} onClick={() => { setFlyout(null); setTool(tool === "ball" ? "move" : "ball"); }}><CircleDot size={19} /><span className="tp-label">Top</span></button>
+            <div className="tp-group">
+              <button className="tp tp-color" title="Çizim rengi" aria-label="Çizim rengi" aria-expanded={flyout === "color"} onClick={() => setFlyout(flyout === "color" ? null : "color")}><span style={{ background: drawColor }} /></button>
+              {flyout === "color" && (
+                <div className="tp-fly tp-fly-colors" role="menu">
+                  {DRAW_COLORS.map((c) => <button key={c} className={`swatch ${drawColor === c ? "swatch-active" : ""}`} style={{ background: c }} aria-label={`Renk ${c}`} onClick={() => { setDrawColor(c); setFlyout(null); }} />)}
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* scene timeline */}
+          <div className={`timeline ${isPlaying ? "is-playing" : ""}`} data-tour="timeline">
+            <span className="tl-label">{isPlaying ? (isRecording ? "● " + (recLabel || "Kaydediliyor") : "Oynatılıyor") : "Sahneler"}</span>
+            <div className="tl-frames">
+              {scenes.map((_, i) => (
+                <button key={i} className={`tl-f ${i === activeScene ? "is-on" : ""}`} disabled={isPlaying} onClick={() => loadSceneAt(i)} title={`Sahne ${i + 1}`}>{i + 1}</button>
+              ))}
+              <button className="tl-f tl-add" disabled={isPlaying} onClick={addScene} title="Şu anki düzeni yeni sahne olarak ekle" aria-label="Sahne ekle"><Plus size={15} /></button>
+            </div>
+            <span className="tl-sep" />
+            {!isPlaying ? (
+              <button className="tl-btn" disabled={scenes.length < 2} onClick={() => playSequence(false)} title={scenes.length < 2 ? "Oynatmak için en az iki sahne ekle" : "Sahneleri oynat"} aria-label="Oynat"><Play size={16} /></button>
+            ) : (
+              <button className="tl-btn" onClick={stopPlayback} title="Durdur" aria-label="Durdur"><Square size={14} /></button>
+            )}
+            <button className="tl-speed" onClick={() => { const order = [0.5, 1, 1.5, 2]; const v = order[(order.indexOf(playSpeedRef.current) + 1) % order.length] || 1; setPlaySpeed(v); playSpeedRef.current = v; }} title="Oynatma hızı">{String(playSpeed).replace(".", ",")}×</button>
+            <button className="tl-btn hide-sm" disabled={scenes.length < 2 || isPlaying} onClick={() => playSequence(true)} title="Oynat ve video olarak kaydet" aria-label="Video kaydet"><Video size={16} /></button>
+            <span className="tl-sep" />
+            <button className="tl-export" data-tour="export" onClick={exportPNG} title="Tahtayı 4K görsel olarak indir"><Download size={15} /><span className="hide-sm">Dışa aktar</span></button>
+          </div>
+
           {tool !== "move" && TOOL_HINTS[tool] && (
             <div className="tool-hint"><span>{TOOL_HINTS[tool]}</span><button onClick={() => setTool("move")}>Bitir</button></div>
           )}
         </main>
-      </div>
+        {panel && <div className="dock-scrim" onClick={() => setPanel(null)} />}
+        {panel && (
+          <aside className="dock" aria-label={DOCK_TITLES[panel] || PANEL_TITLES[panel]}>
+            <div className="dock-head"><span>{DOCK_TITLES[panel] || PANEL_TITLES[panel]}</span><button className="icon-btn" onClick={() => setPanel(null)} aria-label="Paneli kapat"><X size={17} /></button></div>
+            <div className="dock-body">
 
-      {panel && (
-        <div className="panel-backdrop" onClick={() => setPanel(null)}>
-          <div className="panel" onClick={(e) => e.stopPropagation()}>
-            <div className="panel-head"><span>{PANEL_TITLES[panel]}</span><button className="icon-btn" onClick={() => setPanel(null)}><X size={16} /></button></div>
-
-            {panel === "formation" && (
+            {showP("formation") && grpHead("Diziliş")}{showP("formation") && (
               <div>
-                <div className="grid-list">{Object.keys(FORMATIONS).map((k) => <button key={k} className={`chip ${formationKey === k ? "chip-active" : ""}`} onClick={() => applyFormation(k)}>{k}</button>)}</div>
+                <div className="fgrid">{Object.keys(FORMATIONS).map((k) => <button key={k} className={`fcard ${formationKey === k ? "is-on" : ""}`} onClick={() => applyFormation(k)} aria-pressed={formationKey === k}><FormationThumb k={k} /><span>{k}</span></button>)}</div>
                 <div className="panel-divider"><Shield size={14} /> <span>Rakip Takım</span></div>
                 <button className="chip chip-icon chip-block" onClick={toggleOpponent}>{showOpponent ? "Rakip Takımı Kaldır" : "Rakip Takımı Ekle"}</button>
-                {showOpponent && <div className="grid-list" style={{ marginTop: 8 }}>{Object.keys(FORMATIONS).map((k) => <button key={k} className={`chip ${oppFormationKey === k ? "chip-active" : ""}`} onClick={() => applyOppFormation(k)}>{k}</button>)}</div>}
+                {showOpponent && <div className="fgrid" style={{ marginTop: 10 }}>{Object.keys(FORMATIONS).map((k) => <button key={k} className={`fcard fcard-away ${oppFormationKey === k ? "is-on" : ""}`} onClick={() => applyOppFormation(k)} aria-pressed={oppFormationKey === k}><FormationThumb k={k} /><span>{k}</span></button>)}</div>}
               </div>
             )}
 
-            {panel === "roster" && <RosterPanel players={players} oppPlayers={oppPlayers} showOpponent={showOpponent} setTeamSize={setTeamSize} onChange={updatePlayerField} playerScale={playerScale} setPlayerScale={setPlayerScale} ballScale={ballScale} setBallScale={setBallScale} />}
+            {showP("roster") && grpHead("Kadro")}{showP("roster") && <RosterPanel players={players} oppPlayers={oppPlayers} showOpponent={showOpponent} setTeamSize={setTeamSize} onChange={updatePlayerField} playerScale={playerScale} setPlayerScale={setPlayerScale} ballScale={ballScale} setBallScale={setBallScale} />}
 
             {panel === "color" && (() => {
               const away = colorTab === "away" && showOpponent;
@@ -2275,7 +2344,7 @@ export default function App() {
               );
             })()}
 
-            {panel === "labels" && (
+            {showP("labels") && grpHead("Etiketler")}{showP("labels") && (
               <div className="option-row">
                 {[{ id: "none", label: "Etiketleri Gizle" }, { id: "names", label: "İsimleri Göster" }, { id: "roles", label: "Pozisyonları Göster" }].map((o) => (
                   <button key={o.id} className={`chip ${labelMode === o.id ? "chip-active" : ""}`} onClick={() => setLabelMode(o.id)}>{o.label}</button>
@@ -2324,7 +2393,7 @@ export default function App() {
               </div>
             )}
 
-            {panel === "equip" && (
+            {showP("equip") && grpHead("Malzemeler")}{showP("equip") && (
               <div>
                 <div className="sec-title">Antrenman Malzemeleri ve Kale</div>
                 <div className="kit-grid">
@@ -2339,7 +2408,7 @@ export default function App() {
               </div>
             )}
 
-            {panel === "logo" && (
+            {showP("logo") && grpHead("Logo")}{showP("logo") && (
               <div>
                 <input ref={logoFileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={onLogoFile} />
                 <button className="btn btn-accent chip-block" onClick={() => logoFileRef.current && logoFileRef.current.click()}><Upload size={14} /> Görsel Yükle</button>
@@ -2404,7 +2473,7 @@ export default function App() {
               </div>
             )}
 
-            {panel === "balls" && (
+            {showP("balls") && grpHead("Toplar")}{showP("balls") && (
               <div>
                 <div className="ball-grid">
                   {BALL_STYLES.map((b) => (
@@ -2450,9 +2519,18 @@ export default function App() {
                 )}
               </div>
             )}
-          </div>
-        </div>
-      )}
+            </div>
+          </aside>
+        )}
+        <nav className="dockrail" aria-label="Paneller">
+          {DOCK_TABS.map((t) => (
+            <button key={t.id} className={`dr ${panel === t.id ? "is-on" : ""}`} data-tour={`tab-${t.id}`} aria-pressed={panel === t.id} onClick={() => setPanel(panel === t.id ? null : t.id)} title={t.label}>
+              <t.icon size={19} /><span>{t.label}</span>
+            </button>
+          ))}
+        </nav>
+      </div>
+
 
       {/* ---------------- new file modal ---------------- */}
       {showNew && (
@@ -2564,6 +2642,35 @@ export default function App() {
       )}
       <Tour />
     </div>
+  );
+}
+
+const DOCK_TABS = [
+  { id: "takim", label: "Takım", icon: Users },
+  { id: "color", label: "Forma", icon: Shirt },
+  { id: "zones", label: "Saha", icon: Grid3x3 },
+  { id: "draw", label: "Çizim", icon: PenTool },
+  { id: "nesne", label: "Nesneler", icon: Flag },
+  { id: "scenes", label: "Sahneler", icon: Layers },
+  { id: "saves", label: "Kayıtlar", icon: FolderOpen },
+];
+const DOCK_GROUPS = { takim: ["formation", "roster", "labels"], nesne: ["equip", "balls", "logo"] };
+const DOCK_TITLES = { takim: "Takım", nesne: "Nesneler" };
+const TOOL_LAYOUT = [
+  { id: "move" }, { id: "link" },
+  { group: "draw", label: "Çizim araçları", tools: ["line", "arrow", "darrow", "curve", "pen"] },
+  { group: "shape", label: "Şekiller", tools: ["rect", "frect", "zone"] },
+  { id: "text" }, { id: "eraser" },
+];
+
+function FormationThumb({ k }) {
+  return (
+    <svg viewBox="-4 -4 76 113" className="fthumb" aria-hidden="true">
+      <rect x="0" y="0" width="68" height="105" rx="2" className="fthumb-pitch" />
+      <line x1="0" y1="52.5" x2="68" y2="52.5" className="fthumb-line" />
+      <rect x="18" y="88.5" width="32" height="16.5" className="fthumb-line" fill="none" />
+      {FORMATIONS[k].map((sl, i) => <circle key={i} cx={sl.x} cy={sl.y} r={sl.role === "GK" ? 4.2 : 4.6} className={sl.role === "GK" ? "fthumb-gk" : "fthumb-dot"} />)}
+    </svg>
   );
 }
 
@@ -2878,13 +2985,13 @@ function InfoModal({ tab, setTab, onClose }) {
 /* ------------------------------------------------------------------ */
 
 const CSS = `
-:root{ --ink:#141313; --panel:#232222; --panel-border:#3A3838; --surface:#2D2C2C; --accent:#4CBF52; --accent-2:#68D86D; --on-accent:#0C170D; --text:#F4F4F4; --text-dim:#A6A3A3; --danger:#F0524F;
-  --bar-bg:#1A1919; --glass:rgba(26,25,25,0.82); --header-h:58px; --rail-w:78px; }
-.app-root[data-theme="light"]{ --ink:#E9ECE9; --panel:#FFFFFF; --panel-border:#D8DCD8; --surface:#F3F5F3; --accent:#2F9C37; --accent-2:#43B34B; --on-accent:#FFFFFF; --text:#161816; --text-dim:#667066; --danger:#D93A36;
-  --bar-bg:#FFFFFF; --glass:rgba(255,255,255,0.86); }
+:root{ --ink:#17191C; --panel:#1E2023; --panel-border:#34373C; --surface:#2A2D32; --accent:#4CBF52; --accent-2:#68D86D; --on-accent:#0C170D; --text:#F2F3F4; --text-dim:#A4A9AF; --danger:#F0524F;
+  --bar-bg:#1E2023; --glass:#1E2023; --header-h:50px; --rail-w:68px; --dock-w:312px; }
+.app-root[data-theme="light"]{ --ink:#E9ECE9; --panel:#FFFFFF; --panel-border:#DCE0DD; --surface:#F1F3F2; --accent:#2F9C37; --accent-2:#43B34B; --on-accent:#FFFFFF; --text:#15181A; --text-dim:#5F676C; --danger:#D93A36;
+  --bar-bg:#FFFFFF; --glass:#FFFFFF; }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-html,body{margin:0; background:#141313;}
-.app-root{ width:100%; height:100vh; height:100dvh; display:flex; flex-direction:column; overflow:hidden; background:var(--ink); color:var(--text); font-family:'Inter',sans-serif; }
+html,body{margin:0;}
+.app-root{ width:100%; height:100vh; height:100dvh; display:flex; flex-direction:column; overflow:hidden; background:var(--ink); color:var(--text); font-family:'Barlow',sans-serif; }
 .header{ flex:none; height:var(--header-h); display:flex; align-items:center; justify-content:space-between; gap:8px; padding:0 14px; background:var(--bar-bg); border-bottom:1px solid var(--panel-border); z-index:20; }
 .brand{display:flex; align-items:center; gap:10px; flex-shrink:0; min-width:0;}
 .brand-mark-svg{flex-shrink:0; filter:drop-shadow(0 2px 3px rgba(0,0,0,0.35));}
@@ -2892,7 +2999,7 @@ html,body{margin:0; background:#141313;}
 .brand-title{font-family:'Barlow Condensed','Oswald',sans-serif; font-style:italic; font-weight:700; font-size:21px; letter-spacing:0.4px; white-space:nowrap;}
 .brand-sub{font-size:10.5px; color:var(--accent); font-weight:600; letter-spacing:0.4px; margin-top:3px;}
 .header-actions{display:flex; gap:6px; align-items:center;}
-.btn{display:flex; align-items:center; gap:6px; padding:9px 12px; border-radius:10px; border:1px solid var(--panel-border); background:var(--surface); color:var(--text); font-size:12.5px; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif; touch-action:manipulation; user-select:none; transition:transform 0.06s ease, background 0.12s ease; white-space:nowrap; flex-shrink:0;}
+.btn{display:flex; align-items:center; gap:6px; padding:9px 12px; border-radius:10px; border:1px solid var(--panel-border); background:var(--surface); color:var(--text); font-size:12.5px; font-weight:600; cursor:pointer; font-family:'Barlow',sans-serif; touch-action:manipulation; user-select:none; transition:transform 0.06s ease, background 0.12s ease; white-space:nowrap; flex-shrink:0;}
 .btn:hover:not(:disabled){background:var(--panel-border);}
 .btn:active{transform:scale(0.95);}
 .btn:disabled{opacity:0.4; cursor:default;}
@@ -2907,11 +3014,11 @@ html,body{margin:0; background:#141313;}
 .pitch-svg{position:relative; width:100%; height:100%; display:block; touch-action:none; user-select:none; -webkit-user-select:none;}
 .toolbar{order:2; flex:none; display:flex; gap:2px; overflow-x:auto; background:var(--bar-bg); border-top:1px solid var(--panel-border); padding:6px 6px calc(6px + env(safe-area-inset-bottom)); z-index:30; scrollbar-width:none;}
 .toolbar::-webkit-scrollbar{display:none;}
-.tb-btn{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; background:none; border:none; color:var(--text-dim); font-size:10px; font-weight:600; padding:7px 11px; border-radius:11px; cursor:pointer; font-family:'Inter',sans-serif; flex-shrink:0; touch-action:manipulation; user-select:none; transition:transform 0.06s ease, background 0.12s ease, color 0.12s ease;}
+.tb-btn{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; background:none; border:none; color:var(--text-dim); font-size:10px; font-weight:600; padding:7px 11px; border-radius:11px; cursor:pointer; font-family:'Barlow',sans-serif; flex-shrink:0; touch-action:manipulation; user-select:none; transition:transform 0.06s ease, background 0.12s ease, color 0.12s ease;}
 .tb-btn:hover{color:var(--text); background:var(--surface);}
 .tb-btn:active{transform:scale(0.92);}
 .tb-btn-active{color:var(--accent) !important; background:var(--surface);}
-.quickbar{position:absolute; top:10px; left:50%; transform:translateX(-50%); max-width:calc(100% - 16px); display:flex; gap:2px; padding:4px; border-radius:15px; background:var(--glass); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border:1px solid var(--panel-border); box-shadow:0 8px 26px rgba(0,0,0,0.28); overflow-x:auto; scrollbar-width:none; z-index:6;}
+.quickbar{position:absolute; top:10px; left:50%; transform:translateX(-50%); max-width:calc(100% - 16px); display:flex; gap:2px; padding:4px; border-radius:15px; background:var(--glass);  border:1px solid var(--panel-border); box-shadow:0 8px 26px rgba(0,0,0,0.28); overflow-x:auto; scrollbar-width:none; z-index:6;}
 .quickbar::-webkit-scrollbar{display:none;}
 .qb{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-width:42px; height:42px; padding:0 8px; border:none; border-radius:11px; background:transparent; color:var(--text-dim); cursor:pointer; flex-shrink:0; touch-action:manipulation; transition:background 0.12s ease, color 0.12s ease, transform 0.06s ease;}
 .qb:hover{background:var(--surface); color:var(--text);}
@@ -2923,7 +3030,7 @@ html,body{margin:0; background:#141313;}
 .ctx-title{font-family:'Barlow Condensed','Oswald',sans-serif; font-style:italic; font-weight:700; font-size:12.5px; letter-spacing:0.5px; text-transform:uppercase; color:var(--text-dim); padding:4px 8px 6px;}
 .ctx-item{display:flex; align-items:center; gap:8px; width:100%; border:none; background:transparent; color:#FF6B6B; font-size:14px; font-weight:700; padding:10px 10px; border-radius:9px; cursor:pointer; touch-action:manipulation;}
 .ctx-item:hover{background:rgba(255,107,107,0.14);}
-.play-bar{position:absolute; left:50%; bottom:14px; transform:translateX(-50%); display:flex; align-items:center; gap:8px; padding:7px 10px; border-radius:14px; background:var(--glass); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border:1px solid var(--panel-border); font-size:12px; box-shadow:0 8px 26px rgba(0,0,0,0.28); z-index:8; white-space:nowrap;}
+.play-bar{position:absolute; left:50%; bottom:14px; transform:translateX(-50%); display:flex; align-items:center; gap:8px; padding:7px 10px; border-radius:14px; background:var(--glass);  border:1px solid var(--panel-border); font-size:12px; box-shadow:0 8px 26px rgba(0,0,0,0.28); z-index:8; white-space:nowrap;}
 .play-bar b{min-width:34px; text-align:center;}
 .auth-title{margin:2px 0 0; font-family:'Barlow Condensed',sans-serif; font-style:italic; font-weight:700; font-size:22px;}
 .auth-link{background:none; border:none; padding:0; color:var(--accent); font-size:12.5px; cursor:pointer; text-align:left; text-decoration:underline;}
@@ -2935,8 +3042,8 @@ html,body{margin:0; background:#141313;}
 .legal-body{overflow:auto; font-size:13.5px; line-height:1.55; padding:2px 4px; max-height:60vh;}
 .legal-body h3{margin:4px 0 8px; font-family:'Barlow Condensed',sans-serif; font-style:italic; font-size:22px;}
 .legal-body p{margin:0 0 10px;}
-.toast{position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:var(--glass); border:1px solid var(--panel-border); padding:10px 16px; border-radius:12px; font-size:13px; z-index:60; box-shadow:0 8px 26px rgba(0,0,0,0.3); backdrop-filter:blur(10px);}
-.tool-hint{position:absolute; left:50%; bottom:12px; transform:translateX(-50%); max-width:calc(100% - 24px); display:flex; align-items:center; gap:10px; padding:8px 10px 8px 14px; border-radius:14px; background:var(--glass); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border:1px solid var(--panel-border); font-size:12px; line-height:1.35; box-shadow:0 8px 26px rgba(0,0,0,0.28); z-index:6;}
+.toast{position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:var(--glass); border:1px solid var(--panel-border); padding:10px 16px; border-radius:12px; font-size:13px; z-index:60; box-shadow:0 8px 26px rgba(0,0,0,0.3); }
+.tool-hint{position:absolute; left:50%; bottom:12px; transform:translateX(-50%); max-width:calc(100% - 24px); display:flex; align-items:center; gap:10px; padding:8px 10px 8px 14px; border-radius:14px; background:var(--glass);  border:1px solid var(--panel-border); font-size:12px; line-height:1.35; box-shadow:0 8px 26px rgba(0,0,0,0.28); z-index:6;}
 .tool-hint button{flex:none; border:none; background:var(--accent); color:var(--on-accent); font-weight:700; font-size:11.5px; padding:6px 12px; border-radius:9px; cursor:pointer;}
 .panel-backdrop{position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:40; display:flex; align-items:flex-end; justify-content:center;}
 .panel{width:100%; max-width:640px; max-height:78vh; overflow-y:auto; background:var(--panel); border:1px solid var(--panel-border); border-bottom:none; border-radius:20px 20px 0 0; padding:16px; padding-bottom:calc(16px + env(safe-area-inset-bottom)); animation:slideUp 0.16s ease-out;}
@@ -2950,7 +3057,7 @@ html,body{margin:0; background:#141313;}
 .sec-title:first-child{margin-top:4px;}
 .grid-list{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
 .option-row{display:flex; flex-wrap:wrap; gap:8px;}
-.chip{padding:9px 13px; border-radius:10px; border:1px solid var(--panel-border); background:var(--surface); color:var(--text); font-size:13px; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif; touch-action:manipulation; user-select:none; transition:transform 0.06s ease, background 0.12s ease;}
+.chip{padding:9px 13px; border-radius:10px; border:1px solid var(--panel-border); background:var(--surface); color:var(--text); font-size:13px; font-weight:600; cursor:pointer; font-family:'Barlow',sans-serif; touch-action:manipulation; user-select:none; transition:transform 0.06s ease, background 0.12s ease;}
 .chip:hover:not(:disabled){background:var(--panel-border);}
 .chip:disabled{opacity:0.4;}
 .chip:active{transform:scale(0.95);}
@@ -2965,7 +3072,7 @@ html,body{margin:0; background:#141313;}
 .swatch-custom{position:relative; display:flex; align-items:center; justify-content:center; color:#0A0F1E; border:2px dashed var(--panel-border); overflow:hidden;}
 .swatch-custom input{position:absolute; inset:0; opacity:0; cursor:pointer;}
 .tab-row{display:flex; gap:6px; margin-bottom:10px;}
-.tab{flex:1; padding:9px; border-radius:10px; border:1px solid var(--panel-border); background:var(--surface); color:var(--text-dim); font-weight:600; font-size:12.5px; cursor:pointer; touch-action:manipulation; font-family:'Inter',sans-serif;}
+.tab{flex:1; padding:9px; border-radius:10px; border:1px solid var(--panel-border); background:var(--surface); color:var(--text-dim); font-weight:600; font-size:12.5px; cursor:pointer; touch-action:manipulation; font-family:'Barlow',sans-serif;}
 .tab-active{background:var(--accent); color:var(--on-accent); border-color:var(--accent);}
 .draw-panel{display:flex; flex-direction:column; gap:4px;}
 .hint-text{font-size:11.5px; color:var(--text-dim); margin:8px 0 0; line-height:1.5;}
@@ -2983,11 +3090,11 @@ html,body{margin:0; background:#141313;}
 .roster-group-title{font-family:'Barlow Condensed','Oswald',sans-serif; font-style:italic; font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-dim); margin-bottom:2px;}
 .roster-row{display:flex; gap:8px;}
 .roster-num{width:58px; background:var(--surface); border:1px solid var(--panel-border); border-radius:9px; padding:8px; color:var(--text); font-size:14px; font-weight:700; font-family:'Barlow Condensed','Oswald',sans-serif;}
-.roster-name{flex:1; background:var(--surface); border:1px solid var(--panel-border); border-radius:9px; padding:8px 10px; color:var(--text); font-size:13px; font-family:'Inter',sans-serif;}
+.roster-name{flex:1; background:var(--surface); border:1px solid var(--panel-border); border-radius:9px; padding:8px 10px; color:var(--text); font-size:13px; font-family:'Barlow',sans-serif;}
 .saves-panel{display:flex; flex-direction:column;}
 .saves-locked{display:flex; flex-direction:column; gap:10px; align-items:flex-start;}
 .save-row{display:flex; gap:8px;}
-.save-input{flex:1; background:var(--surface); border:1px solid var(--panel-border); border-radius:9px; padding:9px 10px; color:var(--text); font-size:13px; font-family:'Inter',sans-serif;}
+.save-input{flex:1; background:var(--surface); border:1px solid var(--panel-border); border-radius:9px; padding:9px 10px; color:var(--text); font-size:13px; font-family:'Barlow',sans-serif;}
 .saved-list{display:flex; flex-direction:column; gap:6px; margin-top:8px;}
 .saved-row{display:flex; align-items:center; justify-content:space-between; background:var(--surface); border:1px solid var(--panel-border); border-radius:10px; padding:8px 10px;}
 .saved-name{font-size:13px; font-weight:600;}
@@ -3003,7 +3110,7 @@ html,body{margin:0; background:#141313;}
 .modal-cancel{width:100%; justify-content:center; margin-top:14px;}
 .edit-form{display:flex; flex-direction:column; gap:12px;}
 .edit-form label{display:flex; flex-direction:column; gap:5px; font-size:12px; color:var(--text-dim); font-weight:600;}
-.edit-form input{background:var(--surface); border:1px solid var(--panel-border); border-radius:9px; padding:9px 10px; color:var(--text); font-size:14px; font-family:'Inter',sans-serif;}
+.edit-form input{background:var(--surface); border:1px solid var(--panel-border); border-radius:9px; padding:9px 10px; color:var(--text); font-size:14px; font-family:'Barlow',sans-serif;}
 .edit-actions{display:flex; gap:8px; align-items:center; justify-content:flex-end; margin-top:4px;}
 .auth-error{color:var(--danger); font-size:12px; margin:0;}
 .shortcut-list{display:flex; flex-direction:column; gap:8px; margin:12px 0;}
@@ -3023,4 +3130,117 @@ html,body{margin:0; background:#141313;}
   .panel{pointer-events:auto; width:350px; max-width:350px; max-height:100%; border-bottom:1px solid var(--panel-border); border-radius:18px; box-shadow:0 22px 60px rgba(0,0,0,0.5); animation:popIn 0.16s ease-out;}
   @keyframes popIn{from{transform:translateX(-8px); opacity:0;} to{transform:translateX(0); opacity:1;}}
 }
+/* ===================== shell v2: pitch first, floating chrome ===================== */
+.topbar{flex:none; height:var(--header-h); display:flex; align-items:center; gap:14px; padding:0 10px 0 14px; background:var(--panel); border-bottom:1px solid var(--panel-border); z-index:30;}
+.topbar .brand-title{font-size:18px;}
+.doc-tabs{flex:1; min-width:0; display:flex; align-items:center; gap:4px; height:100%;}
+.doc-tab{display:flex; align-items:center; height:34px; max-width:260px; padding:0 14px; border-radius:9px; background:var(--surface); border:1px solid var(--panel-border); font-size:13px; font-weight:600; color:var(--text); min-width:0;}
+.doc-tab span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.doc-new{width:32px; height:32px; display:grid; place-items:center; border-radius:8px; border:none; background:transparent; color:var(--text-dim); cursor:pointer;}
+.doc-new:hover{background:var(--surface); color:var(--text);}
+.top-actions{display:flex; align-items:center; gap:2px;}
+.top-sep{width:1px; height:22px; background:var(--panel-border); margin:0 6px;}
+.ib{width:36px; height:36px; display:grid; place-items:center; border:none; border-radius:9px; background:transparent; color:var(--text-dim); cursor:pointer; touch-action:manipulation;}
+.ib:hover:not(:disabled){background:var(--surface); color:var(--text);}
+.ib:disabled{opacity:0.35; cursor:default;}
+.acct{display:flex; align-items:center; gap:8px; height:36px; padding:0 12px; margin-left:6px; border-radius:9px; border:1px solid var(--panel-border); background:var(--surface); color:var(--text); font:600 13px 'Barlow',sans-serif; cursor:pointer;}
+.acct:hover{border-color:var(--text-dim);}
+.app-body{flex-direction:row !important;}
+.stage{order:0 !important;}
+
+/* tool pill */
+.toolpill{position:absolute; left:14px; top:50%; transform:translateY(-50%); z-index:15; display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px; border-radius:15px; background:var(--glass);  border:1px solid var(--panel-border); box-shadow:0 12px 32px rgba(0,0,0,0.32);}
+.tp{position:relative; width:42px; height:42px; display:grid; place-items:center; border:none; border-radius:10px; background:transparent; color:var(--text-dim); cursor:pointer; touch-action:manipulation; transition:background .12s ease, color .12s ease;}
+.tp:hover{background:var(--surface); color:var(--text);}
+.tp:active{transform:scale(0.94);}
+.tp.is-on{background:var(--accent); color:var(--on-accent);}
+.tp-label{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap;}
+.tp-more{position:absolute; right:4px; bottom:4px; border:3px solid transparent; border-right-color:currentColor; border-bottom-color:currentColor; opacity:.65;}
+.tp-group{position:relative;}
+.tp-sep{width:26px; height:1px; background:var(--panel-border); margin:4px 0;}
+.tp-color span{display:block; width:20px; height:20px; border-radius:50%; border:2px solid var(--text); box-shadow:0 0 0 2px var(--panel);}
+.tp-fly{position:absolute; left:calc(100% + 12px); top:-6px; z-index:25; min-width:176px; display:flex; flex-direction:column; gap:2px; padding:6px; border-radius:13px; background:var(--panel); border:1px solid var(--panel-border); box-shadow:0 16px 40px rgba(0,0,0,0.4); animation:popIn .14s ease-out;}
+.tp-fly-item{display:flex; align-items:center; gap:10px; height:40px; padding:0 12px; border:none; border-radius:9px; background:transparent; color:var(--text); font:600 13.5px 'Barlow',sans-serif; cursor:pointer; text-align:left;}
+.tp-fly-item:hover{background:var(--surface);}
+.tp-fly-item.is-on{background:var(--surface); box-shadow:inset 3px 0 0 var(--accent);}
+.tp-fly-item.is-on svg{color:var(--accent);}
+.tp-fly-colors{flex-direction:row; flex-wrap:wrap; width:196px; min-width:0; gap:8px; padding:12px;}
+.tp-fly-colors .swatch{width:32px; height:32px;}
+
+/* scene timeline */
+.timeline{position:absolute; left:50%; bottom:14px; transform:translateX(-50%); z-index:15; display:flex; align-items:center; gap:6px; max-width:calc(100% - 150px); padding:6px 6px 6px 12px; border-radius:15px; background:var(--glass);  border:1px solid var(--panel-border); box-shadow:0 12px 32px rgba(0,0,0,0.32);}
+.tl-label{font-size:12.5px; font-weight:600; color:var(--text-dim); white-space:nowrap; padding-right:4px;}
+.timeline.is-playing .tl-label{color:var(--accent);}
+.tl-frames{display:flex; gap:4px; min-width:0; overflow-x:auto; scrollbar-width:none;}
+.tl-frames::-webkit-scrollbar{display:none;}
+.tl-f{flex:none; min-width:32px; height:32px; padding:0 6px; border-radius:8px; border:1px solid var(--panel-border); background:transparent; color:var(--text); font:700 12.5px 'Barlow',sans-serif; font-variant-numeric:tabular-nums; cursor:pointer; display:grid; place-items:center;}
+.tl-f:hover:not(:disabled){background:var(--surface);}
+.tl-f.is-on{background:var(--accent); border-color:var(--accent); color:var(--on-accent);}
+.tl-f:disabled{opacity:.5; cursor:default;}
+.tl-add{border-style:dashed; color:var(--text-dim);}
+.tl-sep{flex:none; width:1px; height:22px; background:var(--panel-border); margin:0 2px;}
+.tl-btn{flex:none; width:36px; height:36px; display:grid; place-items:center; border:none; border-radius:9px; background:transparent; color:var(--text); cursor:pointer;}
+.tl-btn:hover:not(:disabled){background:var(--surface);}
+.tl-btn:disabled{opacity:.35; cursor:default;}
+.tl-speed{flex:none; height:32px; min-width:44px; padding:0 8px; border-radius:8px; border:1px solid var(--panel-border); background:transparent; color:var(--text); font:700 12.5px 'Barlow',sans-serif; font-variant-numeric:tabular-nums; cursor:pointer;}
+.tl-export{flex:none; display:flex; align-items:center; gap:7px; height:36px; padding:0 14px; border:none; border-radius:10px; background:var(--accent); color:var(--on-accent); font:700 13px 'Barlow',sans-serif; cursor:pointer;}
+.tl-export:hover{background:var(--accent-2);}
+.tool-hint{top:12px !important; bottom:auto !important;}
+.toast{bottom:84px !important;}
+
+/* docked side panel + its tab rail */
+.dock{flex:none; width:var(--dock-w); display:flex; flex-direction:column; min-height:0; background:var(--panel); border-left:1px solid var(--panel-border); z-index:20; animation:dockIn .16s ease-out;}
+@keyframes dockIn{from{opacity:0; transform:translateX(8px);} to{opacity:1; transform:none;}}
+.dock-head{flex:none; height:48px; display:flex; align-items:center; justify-content:space-between; padding:0 10px 0 16px; border-bottom:1px solid var(--panel-border); font-weight:650; font-size:15px;}
+.dock-body{flex:1; min-height:0; overflow-y:auto; padding:14px 16px 28px;}
+.dock-h{font-size:13px; font-weight:650; color:var(--text-dim); margin:22px 0 10px;}
+.dock-body > .dock-h:first-child{margin-top:2px;}
+.dock-scrim{display:none;}
+.dockrail{flex:none; width:var(--rail-w); display:flex; flex-direction:column; gap:2px; padding:8px 6px; background:var(--panel); border-left:1px solid var(--panel-border); z-index:21; overflow-y:auto;}
+.dr{display:flex; flex-direction:column; align-items:center; gap:4px; padding:9px 2px 8px; border:none; border-radius:10px; background:transparent; color:var(--text-dim); font:600 11px 'Barlow',sans-serif; cursor:pointer; touch-action:manipulation;}
+.dr:hover{background:var(--surface); color:var(--text);}
+.dr.is-on{background:var(--surface); color:var(--text);}
+.dr.is-on svg{color:var(--accent);}
+
+/* quieter section labels: sentence case, no all-caps */
+.sec-title{font-family:'Barlow',sans-serif !important; font-style:normal !important; font-size:13px !important; font-weight:650 !important; text-transform:none !important; letter-spacing:0 !important; color:var(--text-dim) !important;}
+.roster-group-title{font-family:'Barlow',sans-serif !important; font-style:normal !important; font-size:12.5px !important; font-weight:650 !important; text-transform:none !important; letter-spacing:0 !important;}
+.ctx-title{text-transform:none !important; letter-spacing:0 !important;}
+.modal h2{text-transform:none !important;}
+.hint-text{font-size:12.5px !important;}
+
+/* formation thumbnails */
+.fgrid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
+.fcard{display:flex; flex-direction:column; align-items:center; gap:6px; padding:8px 6px 7px; border-radius:11px; border:1px solid var(--panel-border); background:var(--surface); color:var(--text); font:700 12.5px 'Barlow',sans-serif; font-variant-numeric:tabular-nums; cursor:pointer; touch-action:manipulation;}
+.fcard:hover{border-color:var(--text-dim);}
+.fcard.is-on{border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent);}
+.fthumb{width:44px; height:66px; display:block;}
+.fthumb-pitch{fill:#3E8E41;}
+.fthumb-line{stroke:rgba(255,255,255,0.65); stroke-width:1.2; fill:none;}
+.fthumb-dot{fill:#F4F4F4; stroke:rgba(0,0,0,0.35); stroke-width:0.8;}
+.fcard-away .fthumb-dot{fill:#FF7A6B;}
+.fthumb-gk{fill:#E3B341; stroke:rgba(0,0,0,0.35); stroke-width:0.8;}
+
+@media (max-width: 819px){
+  .app-body{flex-direction:column !important;}
+  .stage{order:1 !important;}
+  .dockrail{order:3; width:100%; flex-direction:row; justify-content:space-between; gap:0; overflow:visible; padding:4px 4px calc(4px + env(safe-area-inset-bottom)); border-left:none; border-top:1px solid var(--panel-border); z-index:47;}
+  .dr{flex:1; min-width:0; padding:7px 0 6px; font-size:10.5px;}
+  .dock{position:fixed; left:0; right:0; bottom:calc(58px + env(safe-area-inset-bottom)); width:auto; max-height:62vh; border-left:none; border-top:1px solid var(--panel-border); border-radius:18px 18px 0 0; box-shadow:0 -14px 40px rgba(0,0,0,0.4); z-index:46; animation:slideUp .16s ease-out;}
+  .dock-scrim{display:block; position:fixed; inset:0; background:rgba(0,0,0,0.35); z-index:45;}
+  .toolpill{left:50%; top:auto; bottom:60px; transform:translateX(-50%); flex-direction:row; padding:5px; gap:1px;}
+  .tp{width:38px; height:40px;}
+  .tp-sep{width:1px; height:24px; margin:0 3px;}
+  .tp-fly{left:0; top:auto; bottom:calc(100% + 10px);}
+  .tp-group:last-child .tp-fly{left:auto; right:0;}
+  .timeline{bottom:10px; max-width:calc(100% - 16px); padding:5px 5px 5px 8px;}
+  .timeline:not(.is-playing) .tl-label{display:none;}
+  .topbar{gap:8px; padding:0 6px 0 10px;}
+  .topbar .brand-title{display:none;}
+  .doc-tab{max-width:150px; padding:0 10px;}
+  .acct{padding:0 9px; margin-left:2px;}
+  .top-sep{display:none;}
+}
+@media (max-width: 560px){ .ib.hide-sm, .tl-btn.hide-sm, .tl-export .hide-sm{display:none;} .tl-export{padding:0 12px;} }
+
 `;
