@@ -1,0 +1,32 @@
+.preset-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.preset {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 8px 12px;
+  border-radius: var(--r-card); border: 1px solid var(--line); background: var(--surface-2); color: var(--text); text-align: center;
+}
+.preset:hover { border-color: var(--line-strong); }
+.preset.is-on { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.preset-svg { width: 62px; height: 88px; margin-bottom: 4px; }
+.preset strong { font-size: var(--fs-14); font-weight: 650; line-height: 1.2; }
+.preset small { font-size: var(--fs-12); color: var(--text-2); }
+@media (max-width: 560px) { .preset-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.kbd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; }
+.kbd-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 34px; font-size: var(--fs-14); border-bottom: 1px solid var(--line); }
+.kbd-keys { display: flex; gap: 4px; }
+@media (max-width: 560px) { .kbd-grid { grid-template-columns: 1fr; } }
+
+.ctx { position: fixed; min-width: 190px; }
+.ctx-title { padding: 6px 10px 4px; font-size: var(--fs-12); font-weight: 650; color: var(--text-3); }
+.menu-danger { color: var(--danger); }
+.menu-danger svg { color: var(--danger) !important; }
+.menu-danger:hover { background: var(--danger-soft) !important; }
+
+.toast-host { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); z-index: 150; pointer-events: none; }
+.toast {
+  display: flex; align-items: center; gap: 9px; max-width: min(460px, calc(100vw - 24px)); padding: 10px 16px 10px 12px;
+  border-radius: 12px; background: #101214; color: #eef0f1; font-size: var(--fs-14); font-weight: 500;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35); animation: toastIn 0.18s var(--ease);
+}
+.toast svg { color: #62d167; flex: none; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (max-width: 819px) { .toast-host { bottom: 128px; } }

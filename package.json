@@ -5,18 +5,29 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc"
   },
   "dependencies": {
+    "@fontsource/barlow": "^5.1.1",
+    "@fontsource/barlow-condensed": "^5.1.1",
+    "@radix-ui/react-dialog": "^1.1.6",
+    "@radix-ui/react-popover": "^1.1.6",
+    "@radix-ui/react-slider": "^1.2.3",
+    "@radix-ui/react-tooltip": "^1.1.8",
     "lucide-react": "^0.468.0",
+    "mp4-muxer": "5.1.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "webm-muxer": "5.1.3",
-    "mp4-muxer": "5.1.3"
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.7.3",
     "vite": "^5.4.11"
   }
 }

@@ -1,0 +1,79 @@
+/* Masterclass Board design tokens.
+   World: the pitch is the product. The chrome is a matte graphite with a faint green
+   bias so it sits quietly next to the turf; brand green is used only for the primary
+   action and the active tool. One type family in two widths: Barlow for the interface,
+   Barlow Condensed for the brand, numbers and big labels. */
+
+:root,
+.app[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #15181a;
+  --surface-1: #1c1f22;
+  --surface-2: #24282c;
+  --surface-3: #2e3337;
+  --line: #33393e;
+  --line-strong: #4a5157;
+  --text: #eef0f1;
+  --text-2: #a9b0b6;
+  --text-3: #7c858c;
+  --accent: #4cbf52;
+  --accent-strong: #62d167;
+  --accent-soft: rgba(76, 191, 82, 0.16);
+  --on-accent: #0b1a0d;
+  --danger: #f0524f;
+  --danger-soft: rgba(240, 82, 79, 0.14);
+  --focus: #8fe394;
+  --scrim: rgba(6, 9, 8, 0.56);
+  --shadow-float: 0 14px 36px rgba(0, 0, 0, 0.36), 0 2px 6px rgba(0, 0, 0, 0.22);
+  --shadow-pop: 0 20px 48px rgba(0, 0, 0, 0.45), 0 3px 10px rgba(0, 0, 0, 0.25);
+}
+
+.app[data-theme="light"] {
+  color-scheme: light;
+  --bg: #e7ebe8;
+  --surface-1: #ffffff;
+  --surface-2: #f2f4f3;
+  --surface-3: #e6eae8;
+  --line: #dce1de;
+  --line-strong: #c3cac6;
+  --text: #141819;
+  --text-2: #545e65;
+  --text-3: #7a848b;
+  --accent: #2e9a36;
+  --accent-strong: #26862d;
+  --accent-soft: rgba(46, 154, 54, 0.12);
+  --on-accent: #ffffff;
+  --danger: #d33a36;
+  --danger-soft: rgba(211, 58, 54, 0.1);
+  --focus: #2e9a36;
+  --scrim: rgba(20, 26, 24, 0.38);
+  --shadow-float: 0 12px 32px rgba(20, 30, 25, 0.16), 0 2px 6px rgba(20, 30, 25, 0.1);
+  --shadow-pop: 0 18px 44px rgba(20, 30, 25, 0.22), 0 3px 10px rgba(20, 30, 25, 0.12);
+}
+
+:root {
+  --font-ui: "Barlow", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Barlow Condensed", "Barlow", ui-sans-serif, system-ui, sans-serif;
+
+  --fs-11: 11px;
+  --fs-12: 12px;
+  --fs-13: 13px;
+  --fs-14: 14px;
+  --fs-15: 15px;
+  --fs-17: 17px;
+  --fs-20: 20px;
+  --fs-26: 26px;
+
+  --r-pill: 999px;
+  --r-panel: 14px;
+  --r-card: 11px;
+  --r-control: 9px;
+  --r-small: 6px;
+
+  --topbar-h: 52px;
+  --rail-w: 72px;
+  --dock-w: 320px;
+  --control-h: 36px;
+
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}

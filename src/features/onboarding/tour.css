@@ -1,0 +1,59 @@
+.tour-block { position: fixed; inset: 0; z-index: 9000; }
+.tour-dim { position: fixed; inset: 0; z-index: 9001; background: rgba(6, 9, 8, 0.6); pointer-events: none; animation: fadeIn 0.3s var(--ease); }
+.tour-spot {
+  position: fixed; z-index: 9001; border-radius: 14px; pointer-events: none;
+  box-shadow: 0 0 0 9999px rgba(6, 9, 8, 0.6), 0 0 0 2px var(--accent);
+  transition: left 0.4s var(--ease), top 0.4s var(--ease), width 0.4s var(--ease), height 0.4s var(--ease);
+}
+.tour-guide { position: fixed; z-index: 9002; display: flex; align-items: flex-end; pointer-events: none; animation: guideIn 0.5s var(--ease) both; }
+.tour-guide > * { pointer-events: auto; }
+.tour-guide.at-bottom-right { right: 16px; bottom: 0; }
+.tour-guide.at-bottom-left { left: 16px; bottom: 0; flex-direction: row-reverse; }
+.tour-guide.at-top-right { right: 16px; top: 66px; align-items: flex-start; }
+.tour-guide.at-top-left { left: 16px; top: 66px; flex-direction: row-reverse; align-items: flex-start; }
+@keyframes guideIn { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.tour-coach { flex: none; width: 150px; height: 186px; position: relative; overflow: hidden; }
+.at-top-right .tour-coach, .at-top-left .tour-coach { align-self: flex-end; -webkit-mask-image: linear-gradient(#000 70%, transparent); mask-image: linear-gradient(#000 70%, transparent); }
+.tour-coach-svg { position: absolute; left: 0; bottom: -8px; width: 150px; height: auto; overflow: visible; filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.4)); }
+.tc-bob { animation: tcBob 3.6s ease-in-out infinite; }
+.tc-eyes { transform-box: fill-box; transform-origin: center; animation: tcBlink 4.6s infinite; }
+.tc-talk { display: none; transform-box: fill-box; transform-origin: 50% 0; animation: tcTalk 0.22s ease-in-out infinite alternate; }
+.is-talking .tc-smile { display: none; }
+.is-talking .tc-talk { display: block; }
+.tc-wave { transform-box: view-box; transform-origin: 128px 146px; }
+.is-waving .tc-wave { animation: tcWave 1s ease-in-out 0.4s 2; }
+.tc-glow { opacity: 0.9; }
+@keyframes tcBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes tcBlink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.08); } }
+@keyframes tcTalk { from { transform: scaleY(0.45); } to { transform: scaleY(1); } }
+@keyframes tcWave { 0%, 100% { transform: rotate(0); } 30% { transform: rotate(-20deg); } 65% { transform: rotate(10deg); } }
+
+.tour-bubble {
+  position: relative; flex: 1; min-width: 0; margin-bottom: 24px; padding: 16px 18px 14px;
+  background: var(--surface-1); color: var(--text); border: 1px solid var(--line); border-radius: 16px;
+  box-shadow: var(--shadow-pop); animation: bubbleIn 0.22s var(--ease);
+}
+.at-top-right .tour-bubble, .at-top-left .tour-bubble { margin: 24px 0 0; }
+@keyframes bubbleIn { from { transform: scale(0.97); opacity: 0; } to { transform: none; opacity: 1; } }
+.tour-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.tour-head strong { font-family: var(--font-display); font-size: 22px; font-weight: 700; line-height: 1.1; }
+.tour-head span { font-size: var(--fs-13); font-weight: 600; color: var(--text-3); }
+.tour-text { font-size: var(--fs-15); line-height: 1.55; min-height: 70px; color: var(--text-2); cursor: pointer; }
+.tour-caret { display: inline-block; width: 2px; height: 1em; margin-left: 2px; background: var(--accent); vertical-align: -2px; animation: caret 0.8s steps(1) infinite; }
+.tour-caret.is-off { display: none; }
+@keyframes caret { 50% { opacity: 0; } }
+.tour-tip { margin-top: 8px; padding: 8px 11px; font-size: var(--fs-13); line-height: 1.45; color: var(--text-2); background: var(--accent-soft); border-radius: 8px; }
+.tour-progress { height: 3px; margin: 12px 0 2px; border-radius: 2px; background: var(--surface-3); overflow: hidden; }
+.tour-progress span { display: block; height: 100%; background: var(--accent); transition: width 0.35s var(--ease); }
+.tour-actions { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.tour-spacer { flex: 1; }
+.tour-close { font-size: var(--fs-13); color: var(--text-2); font-weight: 500; }
+
+@media (max-width: 699px) {
+  .tour-coach { width: 92px; height: 116px; }
+  .tour-coach-svg { width: 92px; }
+  .tour-bubble { padding: 13px 14px 12px; margin-bottom: 16px; }
+  .tour-text { font-size: var(--fs-14); min-height: 0; }
+  .tour-head strong { font-size: 19px; }
+}
