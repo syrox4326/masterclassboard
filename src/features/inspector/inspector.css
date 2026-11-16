@@ -2,10 +2,8 @@
   position: absolute; z-index: 18; width: 300px; max-width: calc(100% - 16px);
   display: flex; flex-direction: column; gap: 12px; padding: 12px 12px 14px;
   border-radius: 14px; background: var(--surface-1); border: 1px solid var(--line); box-shadow: var(--shadow-pop); color: var(--text);
-  animation: inspIn 0.14s var(--ease);
 }
 .insp.is-measuring { visibility: hidden; left: 0; top: 0; }
-@keyframes inspIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 .insp-head { display: flex; align-items: center; gap: 10px; margin: -2px -4px 0 0; }
 .insp-head .ibtn { width: 32px; height: 32px; }
 .insp-title { flex: 1; min-width: 0; display: flex; flex-direction: column; }

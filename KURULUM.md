@@ -10,13 +10,13 @@ Siteyi yayınlamadan önce bu adımları bir kez yapman gerekiyor. Üyelik siste
    - **anon public key** (uzun bir yazı; bunu sayfaya koymak güvenlidir)
 
 ## 2) Bu iki bilgiyi siteye yaz
-`App.jsx` dosyasının en üstünde (yaklaşık 130. satır civarı, "ACCOUNTS (Supabase)" yazan bölüm) şunları doldur:
+`src/config.ts` dosyasında şunları doldur (başka hiçbir dosyaya dokunman gerekmez):
 
 ```js
-const SUPABASE_URL = "https://SENIN-PROJEN.supabase.co";
-const SUPABASE_ANON_KEY = "uzun-anon-anahtar";
-const CONTACT_EMAIL = "destek@seninsiten.com";      // sitede görünecek iletişim adresi
-const OWNER_NAME = "Ad Soyad veya Şirket Unvanı";   // KVKK metninde veri sorumlusu olarak yazar
+export const SUPABASE_URL = "https://SENIN-PROJEN.supabase.co";
+export const SUPABASE_ANON_KEY = "uzun-anon-anahtar";
+export const CONTACT_EMAIL = "destek@seninsiten.com";      // sitede görünecek iletişim adresi
+export const OWNER_NAME = "Ad Soyad veya Şirket Unvanı";   // KVKK metninde veri sorumlusu olarak yazar
 ```
 
 ## 3) Taktikler için tabloyu oluştur

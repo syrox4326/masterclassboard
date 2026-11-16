@@ -15,7 +15,7 @@ export const TABS: { id: PanelId; label: string; title: string; icon: IconName }
   { id: "kit", label: "Forma", title: "Forma", icon: "kit" },
   { id: "pitch", label: "Saha", title: "Saha", icon: "pitch" },
   { id: "draw", label: "Çizim", title: "Çizim", icon: "pen" },
-  { id: "objects", label: "Nesneler", title: "Malzeme ve top", icon: "objects" },
+  { id: "objects", label: "Nesneler", title: "Malzeme ve top", icon: "cone" },
   { id: "scenes", label: "Sahneler", title: "Sahneler ve animasyon", icon: "scenes" },
   { id: "saves", label: "Kayıtlar", title: "Kayıtlarım", icon: "saves" },
 ];

@@ -3,7 +3,6 @@
 .tour-spot {
   position: fixed; z-index: 9001; border-radius: 14px; pointer-events: none;
   box-shadow: 0 0 0 9999px rgba(6, 9, 8, 0.6), 0 0 0 2px var(--accent);
-  transition: left 0.4s var(--ease), top 0.4s var(--ease), width 0.4s var(--ease), height 0.4s var(--ease);
 }
 .tour-guide { position: fixed; z-index: 9002; display: flex; align-items: flex-end; pointer-events: none; animation: guideIn 0.5s var(--ease) both; }
 .tour-guide > * { pointer-events: auto; }

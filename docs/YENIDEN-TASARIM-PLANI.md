@@ -194,3 +194,12 @@ Bölüm 1'deki envanterin her maddesi bir Playwright testine bağlanır. Yeni s�
 - Diziliş seçimi küçük saha resimleriyle; pullar daha büyük ve parlak, isimler beyaz etiket içinde; tahta örnek bir 4-3-3'e karşı 4-4-2 ile açılıyor.
 - Tema ziyaretçinin sistem ayarını izliyor ve seçim hatırlanıyor. Arayüz yazısı Barlow, marka ve numaralar Barlow Condensed.
 - Ölçümler: aislopmeter 17 → 9/100 (kalanlar: JavaScript'siz boş sayfa, tek ikon seti, başlık hiyerarşisi; tanıtım sayfası aşamasında çözülecek). impeccable detect: 0 bulgu.
+
+## 11. Yeniden yazım (aşama 1–9 tamamlandı)
+- `src/App.jsx` (280 KB, tek bileşen) kaldırıldı. Yeni yapı: `model/` (tipler, sabitler, diziliş), `store/` (Zustand: belge, geri al/yinele, yerel taslak), `canvas/` (projeksiyon, saha, kaleler, malzemeler, toplar, pullar, etkileşim), `features/` (üst çubuk, araç hapı, panel ve yedi sekmesi, sahne şeridi, seçim düzenleyicisi, oynatma/video, dışa aktarım, hesap, yasal metinler, tur), `ui/` (tasarım sistemi, ikon seti).
+- TypeScript (strict), Radix pencereleri ve ipuçları, gömülü Barlow ve Barlow Condensed.
+- Yeni: yinele, Delete ile silme, tarayıcıda otomatik taslak, seçilen öğenin yanında düzenleyici, çizim rengini ve türünü sonradan değiştirme, malzeme çoğaltma, "Yeni tahta"da oyuncuları koruma seçeneği.
+- Malzemeler perspektife uygun yeniden çizildi; mankenler dik duruyor.
+- Eski Supabase kayıtları aynı veri biçimiyle açılıyor (geçiş gerekmez); `src/config.js` → `src/config.ts`.
+- Ölçümler: aislopmeter 7/100, impeccable detect 0 bulgu, `tsc` hatasız.
+- Sırada: tanıtım sayfası (aşama 10).

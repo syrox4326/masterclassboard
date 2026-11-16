@@ -37,4 +37,4 @@ npm run dev
 Çıkan adresi (genelde http://localhost:5173) tarayıcıda aç.
 
 ## Sırada ne var?
-Yayına girdikten sonra, `src/App.jsx` dosyasının en üstündeki Supabase bilgilerini doldurmak için `KURULUM.md` dosyasını izle. Dosyayı GitHub'da kalem simgesiyle (Edit) düzenleyip kaydetmen yeterli; site kendini yeniler.
+Yayına girdikten sonra, `src/config.ts` dosyasındaki Supabase bilgilerini doldurmak için `KURULUM.md` dosyasını izle. Dosyayı GitHub'da kalem simgesiyle (Edit) düzenleyip kaydetmen yeterli; site kendini yeniler.

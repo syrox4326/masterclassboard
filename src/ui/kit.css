@@ -63,12 +63,12 @@
 .sw[aria-checked="true"], .sw-custom.is-custom { box-shadow: 0 0 0 2px var(--surface-1), 0 0 0 4px var(--text); }
 .sw-custom {
   display: grid; place-items: center; cursor: pointer; overflow: hidden;
-  background: conic-gradient(from 210deg, #e5484d, #f5c542, #22a06b, #0ea5e9, #8b5cf6, #e5484d);
-  color: #fff;
+  background: var(--surface-2); box-shadow: inset 0 0 0 1.5px var(--line-strong);
+  color: var(--text-2);
 }
 .sw-custom.is-custom { background: var(--c); }
 .sw-custom input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-.sw-custom svg { filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5)); }
+.sw-custom.is-custom svg { color: #fff; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5)); }
 
 /* ---------- field ---------- */
 .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
